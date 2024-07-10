@@ -1,0 +1,30 @@
+---
+title: "vcfR - June 21"
+output: html_document
+date: "2024-06-21"
+---
+
+```{r Set up}
+library(vcfR)
+
+Pop1_16216 <- read.vcfR("~/lumpy-sv/Pop1_16216.vcf", verbose = F) #Load in the VCF file
+Pop1_16216
+
+head(Pop1_16216)
+
+```
+
+```{r Subsetting}
+Meta <- metaINFO2df(Pop1_16216) #Store the meta-information lines
+
+Pop1_16216_tidy <- vcfR2tidy(Pop1_16216) #Store the vcf file into a tibble to subset
+Pop1_16216_fix <- Pop1_16216_tidy$fix #Store just the fixed information of the vcf file
+
+Pop1_16216_gt <- Pop1_16216_tidy$gt
+
+Pop1_16216_INV <- subset(Pop1_16216_fix, subset=SVTYPE=="INV") #All columns with just INV
+Pop1_16216_INV_BND <- subset(Pop1_16216_fix, subset=SVTYPE=="INV"|SVTYPE=="BND") #Columns with either INV or BND
+
+```
+
+
