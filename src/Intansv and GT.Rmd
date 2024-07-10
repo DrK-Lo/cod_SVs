@@ -1,0 +1,50 @@
+---
+title: 'Intansv and GT: Table Visualization'
+output: html_document
+date: "2024-07-02"
+---
+
+```{r setup, eval=FALSE}
+#ran BiocManager::install("intansv")
+library(intansv)
+
+library(gt)
+
+library(dplyr)
+```
+
+```{r Intansv}
+##Manipulating the regular VCF output
+Pop1_16216 <- read.vcfR("~/lumpy-sv/Pop1_16216.vcf", verbose = F) #Load in the VCF file
+Pop1_16216_tidy <- vcfR2tidy(Pop1_16216) #Store the vcf file into a tibble to subset
+Pop1_16216_fix <- Pop1_16216_tidy$fix #Store just the fixed information of the vcf file
+Pop1_16216_INV <- subset(Pop1_16216_fix, subset=SVTYPE=="INV") #All columns with just INV
+
+
+Lumpy_Pop1_16216 <- readLumpy(file="~/lumpy-sv/Pop1_16216.vcf", method="Lumpy", regSizeLowerCutoff = 50, readsSupport = 1) #Use intansv to read Lumpy vcf file
+Lumpy_Pop1_16216_INV <- Lumpy_Pop1_16216$inv #Subset the inversions
+Lumpy_Pop1_16216_INV
+
+colnames(Lumpy_Pop1_16216_INV) <- c("Chrom", "Start Pos", "End Pos", "Size", "Supporting Evidence") #Change the column names
+
+##Add in important columns from main VCF
+Lumpy_Pop1_16216_INV$'Start Pos CI' <- Pop1_16216_INV$CIPOS95
+Lumpy_Pop1_16216_INV$'End Pos CI' <- Pop1_16216_INV$CIEND95
+Lumpy_Pop1_16216_INV$'Chrom #' <- Pop1_16216_INV$ChromKey
+
+Lumpy_Pop1_16216_INV <- Lumpy_Pop1_16216_INV %>% relocate(`Chrom #`, .before=Chrom) #Use dplyr to move Chromosome Number to the beginning of the table
+
+Lumpy_Pop1_16216_INV <- subset(Lumpy_Pop1_16216_INV, select = c("Chrom #", "Start Pos", "End Pos", "Size", "Start Pos CI", "End Pos CI")) #Select columns I want to remain in final table
+Lumpy_Pop1_16216_INV
+
+```
+
+```{r Create gt table}
+Lumpy_gt <- gt(Lumpy_Pop1_16216_INV) #Put table into GT format
+Lumpy_gt
+
+Lumpy_gt <- tab_header(Lumpy_gt, title = md("**Inversion Locations for Individual Pop1_16216**")) #Insert title into GT table
+Lumpy_gt
+
+```
+
