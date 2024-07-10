@@ -1,0 +1,49 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r Set Up, eval=F}
+srun --constraint=ib -p lotterhos --pty /bin/bash #Run on the lotterhos partition
+module load singularity/3.10.3 #Load singularity
+export PATH=/home/curtis.lei/lumpy-sv/bin/samtools-1.20:$PATH #Load samtools
+
+cd lumpy-sv #Change directory to lumpy directory
+```
+
+```{r Data Alignment, eval=F}
+cp /work/lotterhos/2020_CodGenomes/labeled_bam_Out/[INSERT FILE NAME] /home/curtis.lei/lumpy-sv #Copy the .bam file to my directory
+
+# Extract the discordant paired-end alignments.
+samtools view -b -F 1294 [BAM File] > [SAMPLE NUMBER].discordants.unsorted.bam
+
+# Extract the split-read alignments
+samtools view -h [BAM File] \
+    | scripts/extractSplitReads_BwaMem -i stdin \
+    | samtools view -Sb - \
+    > [SAMPLE NUMBER].splitters.unsorted.bam
+
+# Sort both alignments 
+##PROBLEM HERE - needs prefixes to run, but unsure of which prefixes to use##
+samtools sort [SAMPLE NUMBER].discordants.unsorted.bam -o [SAMPLE NUMBER].discordants.bam
+samtools sort [SAMPLE NUMBER].splitters.unsorted.bam -o [SAMPLE NUMBER].splitters.bam
+```
+
+```{r LUMPY traditional, eval=F}
+#Generate empirical insert size statistics on library
+samtools view [BAM FILE] \
+    | tail -n+100000 \
+    | scripts/pairend_distro.py \
+    -r 300 \
+    -X 4 \
+    -N 10000 \
+    -o [SAMPLE NUMBER].lib1.histo
+
+#Run with paired-end and split reads
+singularity run /work/lotterhos/Containers/lumpy_0.2.13.sif \
+    -mw 2 \
+    -tt 0 \
+    -pe id:[SAMPLE NUMBER],bam_file:[SAMPLE NUMBER].discordants.bam,histo_file:[SAMPLE NUMBER].lib1.histo,mean:[INSERT],stdev:[INSERT],read_length:300,min_non_overlap:300,discordant_z:,back_distance:10,weight:1,min_mapping_threshold:20 \
+    -sr id:[SAMPLE NUMBER],bam_file:[SAMPLE NUMBER].splitters.bam,back_distance:10,weight:1,min_mapping_threshold:20 \
+    > [SAMPLE NUMBER].vcf
+```
