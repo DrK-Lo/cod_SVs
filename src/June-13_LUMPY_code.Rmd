@@ -26,7 +26,6 @@ samtools view -h Pop1_16216.f.rg.bam \
     > Pop1_16216.splitters.unsorted.bam
 
 # Sort both alignments 
-##PROBLEM HERE - needs prefixes to run, but unsure of which prefixes to use##
 samtools sort Pop1_16216.discordants.unsorted.bam -o Pop1_16216.discordants.bam
 samtools sort Pop1_16216.splitters.unsorted.bam -o Pop1_16216.splitters.bam
 ```
