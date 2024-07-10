@@ -1,0 +1,123 @@
+---
+title: "ggplot to visualize"
+output: html_document
+date: "2024-07-02"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, eval=FALSE}
+library(ggplot2)
+library(vcfR)
+library(dplyr)
+```
+
+```{r Preparing Data for Plotting}
+Pop1_16216 <- read.vcfR("~/lumpy-sv/Pop1_16216.vcf", verbose = F) #Load in the VCF file
+Pop1_16216_tidy <- vcfR2tidy(Pop1_16216) #Store the vcf file into a tibble to subset
+Pop1_16216_fix <- Pop1_16216_tidy$fix #Store just the fixed information of the vcf file
+Pop1_16216_INV <- subset(Pop1_16216_fix, subset=SVTYPE=="INV") #All columns with just INV
+
+Cod_Chrom_Length <- c(30875876, 28732775,	30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694,	34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006)
+Cod_Chrom_Name <- c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1")
+
+Cod_Genome <- data.frame(Cod_Chrom_Name, Cod_Chrom_Length)
+colnames(Cod_Genome) <- c("CHROM", "CHR_LEN")
+
+Pop1_16216_INV_plot <- subset(Pop1_16216_INV, select=c("CHROM", "POS", "END")) #Subset to include just information to graph
+Pop1_16216_INV_plot$CHR_LEN <- c(30875876, 30954429, 43798135, 43798135, 29710654, 26487948, 29586942, 34794352) #Add column for total chromosome length
+Pop1_16216_INV_plot <- Pop1_16216_INV_plot%>% relocate(`CHR_LEN`, .before=POS) #Reorder to have Chromosome length before Start Position
+colnames(Pop1_16216_INV_plot) <- c("CHROM", "CHR_LEN", "POS", "END_POS")
+```
+
+```{r LUMPY Inversion Plot}
+ggplot(data=Cod_Genome, aes(x=CHR_LEN, y=CHROM)) +
+  xlim(0, 60) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[1]*1e-6, y="NC_044048.1", yend="NC_044048.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[2]*1e-6, y="NC_044049.1", yend="NC_044049.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[3]*1e-6,  y="NC_044050.1", yend="NC_044050.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[4]*1e-6,  y="NC_044051.1", yend="NC_044051.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[5]*1e-6, y="NC_044052.1", yend="NC_044052.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[6]*1e-6, y="NC_044053.1", yend="NC_044053.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[7]*1e-6, y="NC_044054.1", yend="NC_044054.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[8]*1e-6, y="NC_044055.1", yend="NC_044055.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[9]*1e-6, y="NC_044056.1", yend="NC_044056.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[10]*1e-6,  y="NC_044057.1", yend="NC_044057.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[11]*1e-6,  y="NC_044058.1", yend="NC_044058.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[12]*1e-6, y="NC_044059.1", yend="NC_044059.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[13]*1e-6, y="NC_044060.1", yend="NC_044060.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[14]*1e-6, y="NC_044061.1", yend="NC_044061.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[15]*1e-6, y="NC_044062.1", yend="NC_044062.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[16]*1e-6, y="NC_044063.1", yend="NC_044063.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[17]*1e-6, y="NC_044064.1", yend="NC_044064.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[18]*1e-6, y="NC_044065.1", yend="NC_044065.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[19]*1e-6, y="NC_044066.1", yend="NC_044066.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[20]*1e-6, y="NC_044067.1", yend="NC_044067.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[21]*1e-6, y="NC_044068.1", yend="NC_044068.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[22]*1e-6, y="NC_044069.1", yend="NC_044069.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[23]*1e-6, y="NC_044070.1", yend="NC_044070.1")) +
+  annotate("segment", y="NC_044048.1",yend="NC_044048.1", x=11299038*1e-6, xend=28292263*1e-6, colour="turquoise3", linewidth=2.5) +
+  annotate("segment", y="NC_044049.1",yend="NC_044049.1", x=481246*1e-6, xend=4466546*1e-6, colour="tan1", linewidth=2.5) +
+  annotate("segment", y="NC_044054.1",yend="NC_044054.1", x=16828712*1e-6, xend=26336501*1e-6, colour="tan1", linewidth=2.5) +
+  annotate("segment", y="NC_044059.1",yend="NC_044059.1", x=1809214*1e-6, xend=13690550*1e-6, colour="tan1", linewidth=2.5) +
+  geom_point(x=Pop1_16216_INV_plot$POS[1]*1e-6, y="NC_044048.1", colour="steelblue4",  size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[2]*1e-6, y="NC_044050.1", colour="steelblue4", size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[3]*1e-6, y="NC_044051.1", colour="steelblue4", size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[4]*1e-6, y="NC_044051.1", fill="steelblue4", colour="goldenrod2", pch=21, size=2.5) +
+  geom_point(x=Pop1_16216_INV_plot$POS[5]*1e-6, y="NC_044055.1", colour="steelblue4", size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[6]*1e-6, y="NC_044056.1", colour="steelblue4", size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[7]*1e-6, y="NC_044061.1", colour="steelblue4",size=3) +
+  geom_point(x=Pop1_16216_INV_plot$POS[8]*1e-6, y="NC_044063.1", colour="steelblue4", size=3) +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[1]*1e-6 + 5, y="NC_044048.1", label="260 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[2]*1e-6 + 5, y="NC_044050.1", label="239 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[3]*1e-6 + 4, y="NC_044051.1", label="528 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[3]*1e-6 + 10, y="NC_044051.1", label="and") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[3]*1e-6 + 15, y="NC_044051.1", label="71 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[5]*1e-6 + 5, y="NC_044055.1", label="164 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[6]*1e-6 + 5, y="NC_044056.1", label="303 bp", colour="steelblue4") +
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[7]*1e-6 + 5.5, y="NC_044061.1", label="31019 bp", colour="steelblue4") + 
+  annotate("text", x=Pop1_16216_INV_plot$CHR_LEN[8]*1e-6 + 4, y="NC_044063.1", label="84 bp", colour="steelblue4") +
+  theme_classic(base_size = 12) +
+  xlab(label="Total Chromosome Length (in Million bp)") +
+  ylab(label="Chromosome") +
+  ggtitle("Inversions present in GOM Individual 16216") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r Major Inversion Plot}
+ggplot(data=Cod_Genome, aes(x=CHR_LEN, y=CHROM)) +
+  xlim(0, 50) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[1]*1e-6, y="NC_044048.1", yend="NC_044048.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[2]*1e-6, y="NC_044049.1", yend="NC_044049.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[3]*1e-6,  y="NC_044050.1", yend="NC_044050.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[4]*1e-6,  y="NC_044051.1", yend="NC_044051.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[5]*1e-6, y="NC_044052.1", yend="NC_044052.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[6]*1e-6, y="NC_044053.1", yend="NC_044053.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[7]*1e-6, y="NC_044054.1", yend="NC_044054.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[8]*1e-6, y="NC_044055.1", yend="NC_044055.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[9]*1e-6, y="NC_044056.1", yend="NC_044056.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[10]*1e-6,  y="NC_044057.1", yend="NC_044057.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[11]*1e-6,  y="NC_044058.1", yend="NC_044058.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[12]*1e-6, y="NC_044059.1", yend="NC_044059.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[13]*1e-6, y="NC_044060.1", yend="NC_044060.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[14]*1e-6, y="NC_044061.1", yend="NC_044061.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[15]*1e-6, y="NC_044062.1", yend="NC_044062.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[16]*1e-6, y="NC_044063.1", yend="NC_044063.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[17]*1e-6, y="NC_044064.1", yend="NC_044064.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[18]*1e-6, y="NC_044065.1", yend="NC_044065.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[19]*1e-6, y="NC_044066.1", yend="NC_044066.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[20]*1e-6, y="NC_044067.1", yend="NC_044067.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[21]*1e-6, y="NC_044068.1", yend="NC_044068.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[22]*1e-6, y="NC_044069.1", yend="NC_044069.1")) +
+  geom_segment(data=Cod_Genome, aes(x=0, xend=CHR_LEN[23]*1e-6, y="NC_044070.1", yend="NC_044070.1")) +
+  annotate("segment", y="NC_044048.1",yend="NC_044048.1", x=11299038*1e-6, xend=28292263*1e-6, colour="lightsteelblue4", linewidth=2.5) +
+  annotate("segment", y="NC_044049.1",yend="NC_044049.1", x=481246*1e-6, xend=4466546*1e-6, colour="lightsteelblue4", linewidth=2.5) +
+  annotate("segment", y="NC_044054.1",yend="NC_044054.1", x=16828712*1e-6, xend=26336501*1e-6, colour="lightsteelblue4", linewidth=2.5) +
+  annotate("segment", y="NC_044059.1",yend="NC_044059.1", x=1809214*1e-6, xend=13690550*1e-6, colour="lightsteelblue4", linewidth=2.5) +
+  theme_classic(base_size = 11.5) +
+  xlab(label="Total Chromosome Length (in Million bp)") +
+  ylab(label="Chromosome") +
+  ggtitle("Major Inversions Present in the Atlantic Cod Genome")
+
+```
