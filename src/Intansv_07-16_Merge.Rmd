@@ -1,0 +1,25 @@
+---
+title: "Pop1_16216 Lumpy and Delly"
+output: html_document
+date: "2024-07-16"
+---
+
+```{r setup, include=FALSE, eval=FALSE}
+library(intansv)
+
+```
+
+```{r Read Files}
+Lumpy_Pop1_16216 <- read.vcfR("~/lumpy-sv/Lumpy.Pop1_16216.vcf", verbose = F) #Load in the VCF file
+Delly_Pop1_16216 <- read.vcfR("~/delly/Delly.Pop1_16216.vcf", verbose = F) #Load in the VCF file
+
+Lumpy_Pop1_16216 <- readLumpy(file="~/lumpy-sv/Pop1_16216.vcf", method="Lumpy", regSizeLowerCutoff = 50, readsSupport = 1) #Use intansv to read Lumpy vcf file
+Delly_Pop1_16216 <- readDelly(file="~/delly/Delly.Pop1_16216.vcf", regSizeLowerCutoff = 50, readsSupport = 1) #Use intansv to read Delly vcf file
+
+Lumpy_inversion <- Lumpy_Pop1_16216$inv
+Delly_inversion <- Delly_Pop1_16216$inv
+
+Pop1_16216_merged <- methodsMerge(Lumpy_Pop1_16216, Delly_Pop1_16216)
+Pop1_16216_merged$inv
+
+```
