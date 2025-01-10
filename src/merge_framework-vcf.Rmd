@@ -1,0 +1,328 @@
+---
+title: "Merge vcf files - Pop1_16216-220"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r load libraries, include=FALSE}
+library(vcfR)
+
+library(StructuralVariantAnnotation)
+library(stringr)
+library(VariantAnnotation)
+
+```
+
+## DELLY
+
+```{r merge the first 2 individuals data}
+#Load in original vcf files
+Pop1_16216 <- read.vcfR("/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly/delly.Pop1_16216.vcf")
+Pop1_16220 <- read.vcfR("/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly/delly.Pop1_16220.vcf")
+
+#Change format of vcf into tidy and extract fix
+Pop1_16216 <- vcfR2tidy(Pop1_16216)
+Pop1_16216.fix <- Pop1_16216$fix
+Pop1_16220 <- vcfR2tidy(Pop1_16220)
+Pop1_16220.fix <- Pop1_16220$fix
+
+#Add "individual" column to fix
+Pop1_16216.fix[, 'INDIVIDUAL'] = "Pop1_16216"
+Pop1_16220.fix[, 'INDIVIDUAL'] = "Pop1_16220"
+
+#Add genotype information to fix
+Pop1_16216.gt <- Pop1_16216$gt
+Pop1_16216.fix$GT <- Pop1_16216.gt$gt_GT
+
+Pop1_16220.gt <- Pop1_16220$gt
+Pop1_16220.fix$GT <- Pop1_16220.gt$gt_GT
+
+#Subset to only include wanted columns
+Pop1_16216_INV <- subset(Pop1_16216.fix, select=c("INDIVIDUAL", "CHROM", "POS", "CIPOS", "END", "CIEND", "GT", "QUAL", "FILTER"), subset=SVTYPE=="INV")
+Pop1_16220_INV <- subset(Pop1_16220.fix, select=c("INDIVIDUAL", "CHROM", "POS", "CIPOS", "END", "CIEND", "GT", "QUAL", "FILTER"), subset=SVTYPE=="INV")
+
+#Merge
+Pop1_INV <- rbind(Pop1_16216_INV, Pop1_16220_INV)
+
+```
+
+```{r scale up code for multiple individuals}
+#Read files
+Pop1_files <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE, full.names = TRUE)
+Pop1 <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE)
+
+#For-loop
+All.Pop1_INV = NULL
+
+for (i in 1:length(Pop1_files)) {
+  Pop1_tidy <- vcfR2tidy(read.vcfR(Pop1_files[i])) #Read and transform each vcf into tidy format and assign it to the variable
+  Pop1_fix <- Pop1_tidy$fix #Extract the fix and assign it to a variable
+  Pop1_gt <- Pop1_tidy$gt #Extract the gt and assign it to a variable
+  
+  Pop1_fix$GT <- Pop1_gt$gt_GT #Create a column to store genotype information (extracted from gt)
+  Pop1_fix$INDIVIDUAL <- Pop1_gt$Indiv #Create a column to store individual's name (extracted from gt)
+  Pop1_fix$PROGRAM <- "DELLY" #Create a column to distinguish the program of the output
+
+  Pop1_INV <- subset(Pop1_fix, select=c("INDIVIDUAL", "CHROM", "ID", "POS", "CIPOS", "END", "CIEND", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM"), subset=SVTYPE=="INV") #Subset only necessary columns
+  
+  All.Pop1_INV <- rbind(All.Pop1_INV, Pop1_INV) #Store output into a single dataframe
+}
+
+```
+
+```{r change delly output starting with one individual}
+#Set-up data again
+Pop1_16216.fix <- vcfR2tidy(read.vcfR("/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly/delly.Pop1_16216.vcf"))$fix
+Pop1_16216.gt <- vcfR2tidy(read.vcfR("/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly/delly.Pop1_16216.vcf"))$gt
+Pop1_16216.fix$GT <- Pop1_16216.gt$gt_GT
+Pop1_16216.fix$INDIVIDUAL <- Pop1_16216.gt$Indiv
+Pop1_16216.fix$PROGRAM <- "DELLY"
+Pop1_16216.INV <- subset(Pop1_16216.fix, select=c("INDIVIDUAL", "CHROM", "ID", "POS", "CIPOS", "END", "CIEND", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM"), subset=SVTYPE=="INV") #Subset only necessary columns
+
+#Check if CIPOS and CIEND are equal
+Pop1_16216.INV$CIPOS==Pop1_16216.INV$CIEND #Yes equal; use this information for next steps
+
+#Edit Delly output
+Pop1_16216.INV$STRAND <- NA #Add strand column
+
+#Get output of Confidence interval into single numerical value
+Pop1_16216.CI <- vector()
+for (i in 1:length(Pop1_16216.INV$CIPOS)) {
+  if(substr(Pop1_16216.INV$CIPOS[i], 4, 4) == ",") 
+  {
+    Pop1_16216.CI[i] <- substr(Pop1_16216.INV$CIPOS[i], 2, 3)
+    } else {
+      Pop1_16216.CI[i] <- substr(Pop1_16216.INV$CIPOS[i], 2, 4)
+      }
+}
+Pop1_16216.INV$CI <- as.numeric(Pop1_16216.CI) #Store confidence interval value in dataset
+
+#Add new columns for start confidence interval and end confidence interval
+for(i in 1:length(Pop1_16216.INV$POS)){
+  #New start positions
+  Pop1_16216.INV$POS_PLUS_CI[i] <- (Pop1_16216.INV$POS[i]+Pop1_16216.INV$CI[i])
+  Pop1_16216.INV$POS_MINUS_CI[i] <- (Pop1_16216.INV$POS[i]-Pop1_16216.INV$CI[i])
+  
+  #New end positions
+  Pop1_16216.INV$END_PLUS_CI[i] <- (Pop1_16216.INV$END[i]+Pop1_16216.INV$CI[i])
+  Pop1_16216.INV$END_MINUS_CI[i] <- (Pop1_16216.INV$END[i]-Pop1_16216.INV$CI[i])
+  
+  #Length
+  Pop1_16216.INV$SVLEN[i] <- (Pop1_16216.INV$END[i]-Pop1_16216.INV$POS[i]) #SVLEN is difference between original Start and End Positions
+
+}
+
+#Remove CIPOS and CIEND
+Pop1_16216.INV <- subset(Pop1_16216.INV, select= c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND"))
+
+```
+
+## GRIDSS
+
+```{r extract structural variant annotations}
+#Code as described by jamesc99 {hyperlink: https://github.com/PapenfussLab/gridss/issues/670}
+Pop1_16216_GRIDSS <- readVcf("/work/lotterhos/2020_CodGenomes_Inversions/outputs/gridss/gridssDelly.Pop1_16216.vcf", "gadMor3.0") #Read in vcf file
+grange <- breakpointRanges(Pop1_16216_GRIDSS) # Get the GRanges object for vcf file
+event_types <- simpleEventType(grange) # Get the simplest explanation of SV event
+Pop1_16216_GRIDSS_INV <- as.data.frame(grange[event_types == "INV"]) #Subset just for inversions
+info(header(Pop1_16216_GRIDSS)) = unique(as(rbind(as.data.frame(info(header(Pop1_16216_GRIDSS))), data.frame(
+    row.names = c("SVLEN"),
+    Number = c("1"),
+    Type = c("Integer"),
+    Description = c("Length of the structural variant"))), "DataFrame"))
+Pop1_16216_GRIDSS_INV <- subset(Pop1_16216_GRIDSS_INV, select=c("seqnames", "start", "end", "width", "event", "svLen", "strand", "FILTER", "QUAL", "paramRangeID"))
+
+```
+
+```{r change GRIDSS output}
+Pop1_16216_INV.GRIDSS.temp <- data.frame(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+colnames(Pop1_16216_INV.GRIDSS.temp)=c("event", "seqnames", "start1", "start2", "end1", "end2",  "svLen", "strand", "FILTER", "QUAL", "PROGRAM")
+Pop1_16216_INV.GRIDSS=NULL
+
+for(i in 1:length(Pop1_16216_GRIDSS_INV$event)) {
+  Pop1_event <- Pop1_16216_GRIDSS_INV$event[i] #Get the event
+  Pop1_event.rows <- Pop1_16216_GRIDSS_INV[Pop1_16216_GRIDSS_INV$event==Pop1_event, ] #Grab the rows which correlate to the  event
+  
+  Pop1_16216_INV.GRIDSS.temp$event <- Pop1_event #Copy the event into the new dataframe
+  Pop1_16216_INV.GRIDSS.temp$start1 <- Pop1_event.rows[1, ]$start #Map the first start value of the event
+  Pop1_16216_INV.GRIDSS.temp$start2 <- Pop1_event.rows[1, ]$end #Map the second start value of the event
+  Pop1_16216_INV.GRIDSS.temp$end1 <- Pop1_event.rows[2, ]$start #Map the first end value of the event
+  Pop1_16216_INV.GRIDSS.temp$end2 <- Pop1_event.rows[2, ]$end #Map the second end value of the event
+  #Map the chromosome if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$seqnames==Pop1_event.rows[2, ]$seqnames){
+    Pop1_16216_INV.GRIDSS.temp$seqnames <- Pop1_event.rows[1, ]$seqnames}
+  #Map the sv length if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$svLen==Pop1_event.rows[2, ]$svLen){
+    Pop1_16216_INV.GRIDSS.temp$svLen <- Pop1_event.rows[1, ]$svLen}
+  #Map the Filter if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$FILTER==Pop1_event.rows[2, ]$FILTER){
+    Pop1_16216_INV.GRIDSS.temp$FILTER <- Pop1_event.rows[1, ]$FILTER}
+  #Map the strand if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$strand==Pop1_event.rows[2, ]$strand){
+    Pop1_16216_INV.GRIDSS.temp$strand <- Pop1_event.rows[1, ]$strand}
+   #Map the quality value if they are equal across the two rows
+   if(Pop1_event.rows[1, ]$QUAL==Pop1_event.rows[2, ]$QUAL){
+     Pop1_16216_INV.GRIDSS.temp$QUAL <- Pop1_event.rows[1, ]$QUAL}
+   Pop1_16216_INV.GRIDSS.temp$PROGRAM <- "GRIDSS"
+  
+   Pop1_16216_INV.GRIDSS <- rbind(Pop1_16216_INV.GRIDSS, Pop1_16216_INV.GRIDSS.temp)
+}
+
+Pop1_16216_INV.GRIDSS <- unique(Pop1_16216_INV.GRIDSS)
+
+```
+
+## Combine GRIDSS and DELLY
+
+```{r combine files}
+#Configure GRIDSS output
+Pop1_16216_INV.GRIDSS$INDIVIDUAL <- Pop1_16216.INV$INDIVIDUAL[1]
+Pop1_16216_INV.GRIDSS$POS <- NA
+Pop1_16216_INV.GRIDSS$END <- NA
+Pop1_16216_INV.GRIDSS$GT <- NA
+Pop1_16216_INV.GRIDSS$SVTYPE <- "INV"
+Pop1_16216_INV.GRIDSS <- Pop1_16216_INV.GRIDSS[, c(12, 2, 1, 13, 3, 4, 14, 5, 6, 7, 15, 10, 9, 16, 11, 8)]
+colnames(Pop1_16216_INV.GRIDSS) <- c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND")
+
+#Combine
+INV_Pop1_16216 <- rbind(Pop1_16216.INV, Pop1_16216_INV.GRIDSS)
+
+write.csv(INV_Pop1_16216, "/work/lotterhos/2020_CodGenomes_Inversions/outputs/Pop1_16216_DellyGRIDSS.csv")
+```
+
+## Scaling Up outputs
+
+```{r create delly dataset}
+#Read files
+Pop1.delly_files <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE, full.names = TRUE)
+Pop1.delly <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE)
+
+#For-loop: Subset inversions
+Pop1_INV.DELLY = NULL
+for (m in 1:9) {
+  Pop1_tidy <- vcfR2tidy(read.vcfR(Pop1.delly_files[m])) #Read and transform each vcf into tidy format and assign it to the variable
+  Pop1_fix <- Pop1_tidy$fix #Extract the fix and assign it to a variable
+  Pop1_gt <- Pop1_tidy$gt #Extract the gt and assign it to a variable
+    
+  Pop1_fix$GT <- Pop1_gt$gt_GT #Create a column to store genotype information (extracted from gt)
+  Pop1_fix$INDIVIDUAL <- Pop1_gt$Indiv #Create a column to store individual's name (extracted from gt)
+  Pop1_fix$PROGRAM <- "DELLY" #Create a column to distinguish the program of the output
+    
+  Pop1.DELLY <- subset(Pop1_fix, select=c("INDIVIDUAL", "CHROM", "ID", "POS", "CIPOS", "END", "CIEND", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM"), subset=SVTYPE=="INV") #Subset only necessary columns
+  
+  Pop1_INV.DELLY <- rbind(Pop1_INV.DELLY, Pop1.DELLY) #Store output into a single dataframe
+  
+}
+
+##Adjust Dataset
+Pop1_INV.DELLY$STRAND <- NA #Add strand column
+#Get output of Confidence interval into single numerical value
+Pop1_CI <- vector()
+for (k in 1:length(Pop1_INV.DELLY$CIPOS)) {
+  if(substr(Pop1_INV.DELLY$CIPOS[k], 3, 3) == "," || substr(Pop1_INV.DELLY$CIPOS[k], 4, 4) == "," ){
+    Pop1_CI[k] <- substr(Pop1_INV.DELLY$CIPOS[k], 2, 3)
+    } else {
+    Pop1_CI[k] <- substr(Pop1_INV.DELLY$CIPOS[k], 2, 4)
+    }
+  }
+Pop1_INV.DELLY$CI <- as.numeric(Pop1_CI) #Store confidence interval as numeric value in dataset
+    
+#Add new columns for start confidence interval and end confidence interval
+Pop1_INV.DELLY$POS_PLUS_CI <- NA
+Pop1_INV.DELLY$POS_MINUS_CI <- NA
+Pop1_INV.DELLY$END_PLUS_CI <- NA
+Pop1_INV.DELLY$END_MINUS_CI <- NA
+Pop1_INV.DELLY$SVLEN <- NA
+for(j in 1:length(Pop1_INV.DELLY$POS)){
+  #New start positions
+  Pop1_INV.DELLY$POS_PLUS_CI[j] <- (Pop1_INV.DELLY$POS[j]+Pop1_INV.DELLY$CI[j])
+  Pop1_INV.DELLY$POS_MINUS_CI[j] <- (Pop1_INV.DELLY$POS[j]-Pop1_INV.DELLY$CI[j])
+      
+  #New end positions
+  Pop1_INV.DELLY$END_PLUS_CI[j] <- (Pop1_INV.DELLY$END[j]+Pop1_INV.DELLY$CI[j])
+  Pop1_INV.DELLY$END_MINUS_CI[j] <- (Pop1_INV.DELLY$END[j]-Pop1_INV.DELLY$CI[j])
+      
+  #Length
+  Pop1_INV.DELLY$SVLEN[j] <- (Pop1_INV.DELLY$END[j]-Pop1_INV.DELLY$POS[j]) #SVLEN is difference between original Start and End Positions
+  }
+    
+#Remove CIPOS and CIEND
+Pop1_INV.DELLY <- subset(Pop1_INV.DELLY, select= c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND"))
+
+```
+
+```{r create GRIDSS dataset}
+Pop1.gridss_files <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/gridss_vcf", all.files = FALSE, full.names = TRUE)
+Pop1.gridss <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/gridss_vcf", all.files = FALSE)
+
+#For-Loop: Subset the inversions
+GRIDSS_INV=NULL
+for (i in 1:length(Pop1.gridss)) {
+  Pop1_VCF <- readVcf(Pop1.gridss_files[i], "gadMor3.0") #Read in vcf file
+  grange <- breakpointRanges(Pop1_VCF) #Get the GRanges object for vcf file
+  event_types <- simpleEventType(grange) #Get the simplest explanation of SV event
+  Pop1_GRIDSS_SV <- as.data.frame(grange[event_types == "INV"]) #Subset just for inversions
+  info(header(Pop1_VCF)) = unique(as(rbind(as.data.frame(info(header(Pop1_VCF))), data.frame(
+    row.names = c("SVLEN"),
+    Number = c("1"),
+    Type = c("Integer"),
+    Description = c("Length of the structural variant"))), "DataFrame")) #Adjust header
+  
+  Pop1.GRIDSS <- subset(Pop1_GRIDSS_SV, select=c("seqnames", "start", "end", "width", "event", "svLen", "strand", "FILTER", "QUAL")) #Subset only necessary columns
+  
+  Pop1.GRIDSS$INDIVIDUAL <- substr(Pop1.gridss[i], 13, 22) #Add column for individual
+  
+  GRIDSS_INV <- rbind(GRIDSS_INV, Pop1.GRIDSS)
+}
+
+## Adjust Dataset
+Pop1_INV.GRIDSS.temp <- data.frame(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+colnames(Pop1_INV.GRIDSS.temp)=c("event", "seqnames", "start1", "start2", "end1", "end2",  "svLen", "strand", "FILTER", "QUAL", "PROGRAM", "INDIVIDUAL")
+Pop1_INV.GRIDSS=NULL
+
+#For-Loop: Modify GRIDSS output to format we want it in
+for(i in 1:length(GRIDSS_INV$event)) {
+  Pop1_event <- GRIDSS_INV$event[i] #Get the event
+  Pop1_event.rows <- GRIDSS_INV[GRIDSS_INV$event==Pop1_event, ] #Grab the rows which correlate to the  event
+  
+  Pop1_INV.GRIDSS.temp$event <- Pop1_event #Copy the event into the new dataframe
+  Pop1_INV.GRIDSS.temp$start1 <- Pop1_event.rows[1, ]$start #Map the first start value of the event
+  Pop1_INV.GRIDSS.temp$start2 <- Pop1_event.rows[1, ]$end #Map the second start value of the event
+  Pop1_INV.GRIDSS.temp$end1 <- Pop1_event.rows[2, ]$start #Map the first end value of the event
+  Pop1_INV.GRIDSS.temp$end2 <- Pop1_event.rows[2, ]$end #Map the second end value of the event
+  #Map the chromosome if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$seqnames==Pop1_event.rows[2, ]$seqnames){
+    Pop1_INV.GRIDSS.temp$seqnames <- Pop1_event.rows[1, ]$seqnames}
+  #Map the sv length if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$svLen==Pop1_event.rows[2, ]$svLen){
+    Pop1_INV.GRIDSS.temp$svLen <- Pop1_event.rows[1, ]$svLen}
+  #Map the Filter if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$FILTER==Pop1_event.rows[2, ]$FILTER){
+    Pop1_INV.GRIDSS.temp$FILTER <- Pop1_event.rows[1, ]$FILTER}
+  #Map the strand if they are equal across the two rows
+  if(Pop1_event.rows[1, ]$strand==Pop1_event.rows[2, ]$strand){
+    Pop1_INV.GRIDSS.temp$strand <- Pop1_event.rows[1, ]$strand}
+   #Map the quality value if they are equal across the two rows
+   if(Pop1_event.rows[1, ]$QUAL==Pop1_event.rows[2, ]$QUAL){
+     Pop1_INV.GRIDSS.temp$QUAL <- Pop1_event.rows[1, ]$QUAL}
+   Pop1_INV.GRIDSS.temp$PROGRAM <- "GRIDSS" 
+  
+   Pop1_INV.GRIDSS <- rbind(Pop1_INV.GRIDSS, Pop1_INV.GRIDSS.temp)
+}
+
+Pop1_INV.GRIDSS$INDIVIDUAL <- GRIDSS_INV$INDIVIDUAL #Add column for individual
+Pop1_INV.GRIDSS <- unique(Pop1_INV.GRIDSS) #Remove duplicate rows
+Pop1_INV.GRIDSS$POS <- NA #Add "Pos" column (seen in DELLY file)
+Pop1_INV.GRIDSS$END <- NA #Add "End" column (seen in DELLY file)
+Pop1_INV.GRIDSS$GT <- NA #Add "GT" column (seen in DELLY file)
+Pop1_INV.GRIDSS$SVTYPE <- "INV" #Add "svtype" column showing it's only inversions (seen in DELLY file)
+
+Pop1_INV.GRIDSS <- Pop1_INV.GRIDSS[, c(12, 2, 1, 13, 3, 4, 14, 5, 6, 7, 15, 10, 9, 16, 11, 8)] #Reorder the columns
+colnames(Pop1_INV.GRIDSS) <- c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND") #Make column names consistent with DELLY output
+
+```
+
+```{r combine}
+INV_Pop1 <- rbind(Pop1_INV.DELLY, Pop1_INV.GRIDSS)
+
+```

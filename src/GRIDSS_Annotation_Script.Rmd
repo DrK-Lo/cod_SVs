@@ -1,0 +1,44 @@
+---
+title: "GRIDSS SV Annotation"
+output: html_document
+date: "2024-09-14"
+---
+
+```{r load libraries, include=FALSE}
+#library(argparser)
+#library(tidyverse)
+##library(stringdist)
+#library(testthat)
+#library(rtracklayer)
+
+library(StructuralVariantAnnotation)
+library(stringr)
+library(VariantAnnotation)
+
+```
+
+```{r code}
+#Code as described by jamesc99 {hyperlink: https://github.com/PapenfussLab/gridss/issues/670}
+Pop1_16216 <- readVcf("/work/lotterhos/2020_CodGenomes_Inversions/outputs/gridss/gridssDelly.Pop1_16216.vcf", "gadMor3.0") #Read in vcf file
+gr <- breakpointRanges(Pop1_16216) # Get the GRanges object for vcf file
+event_types <- simpleEventType(gr) # Get the simplest explanation of SV event
+(inversions <- gr[event_types == "INV"]) #Subset just for inversions
+
+info(header(Pop1_16216)) = unique(as(rbind(as.data.frame(info(header(Pop1_16216))), data.frame(
+    row.names = c("SVLEN"),
+    Number = c("1"),
+    Type = c("Integer"),
+    Description = c("Length of the structural variant"))), "DataFrame"))
+
+```
+
+```{r cleaning up outputs}
+inversions #view inversions object
+(inversions2.0 <- as.data.frame(subset(inversions, select=c("FILTER", "event", "svLen"))))
+
+
+
+#View GRIDSS output using VCFR
+Pop_16216 <- read.vcfR("/work/lotterhos/2020_CodGenomes_Inversions/outputs/gridss/gridssDelly.Pop1_16216.vcf")
+Pop_16216 <- vcfR2tidy(Pop_16216)$fix
+```

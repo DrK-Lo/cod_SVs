@@ -1,0 +1,27 @@
+---
+title: "thesis-subset_merge"
+output: html_document
+date: "2025-01-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Set up
+
+```{r load libraries, include=FALSE}
+library(vcfR)
+
+library(StructuralVariantAnnotation)
+library(stringr)
+library(VariantAnnotation)
+
+```
+
+```{read in files}
+delly_files <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE, full.names = TRUE)
+
+delly <- list.files(path="/work/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files = FALSE)
+
+```
