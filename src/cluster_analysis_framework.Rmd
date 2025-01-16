@@ -157,3 +157,100 @@ plot(clust)
 cutree(clust, h=1)
 
 ```
+
+##Evaluating cutoffs
+### Run cluster on all of Pop1
+```{r}
+#Load data
+Pop1 <- read.csv("/work/lotterhos/2020_CodGenomes_Inversions/outputs/Pop1_INV.csv")
+Pop1.PCA <- Pop1[Pop1$PROGRAM=="PCA", ] #Stored just in case; for now, doing overlap test without PCA
+Pop1 <- subset(Pop1, c(Pop1$PROGRAM != "PCA", Pop1$CHROM))
+Pop1$LABEL <- paste(Pop1$CHROM,Pop1$POS_MINUS_CI,Pop1$END_PLUS_CI, sep="_") #Add label
+Pop1_names <- unique(Pop1$INDIVIDUAL) #Isolate population labels
+
+#Run overlap function into local environment
+overlap_test <- function(dataframe){
+  mat <- matrix(ncol = nrow(dataframe), nrow = nrow(dataframe))
+  
+  for (i in 1:nrow(dataframe)) {
+    for (j in 1:nrow(dataframe)) {
+      I1_lower <- dataframe$POS_MINUS_CI[i]
+      I1_upper <- dataframe$POS_PLUS_CI[i]
+    
+      I2_lower <- dataframe$POS_MINUS_CI[j]
+      I2_upper <- dataframe$POS_PLUS_CI[j]
+    
+      mat[i,j] <- if(I2_lower <= I1_lower){
+        I2_upper >= I1_lower | I2_upper >= I1_upper
+        } else if (I2_upper >= I1_upper){
+          I2_lower <= I1_upper
+          } else if (I2_upper <= I1_upper){
+            I2_upper >= I1_lower
+            }
+    }
+  }
+  
+  return(mat)
+}
+
+#Run overlap test
+for(i in 1:length(Pop1_names)){
+  individual <- Pop1_names[i]
+  Pop.temp <- Pop1[Pop1$INDIVIDUAL==individual, ]
+  mat.temp <- overlap_test(Pop.temp)
+  rownames(mat.temp) <- Pop.temp$LABEL
+  colnames(mat.temp) <- Pop.temp$LABEL
+  
+  assign(paste("Pop" ,individual, "overlap", sep=''), mat.temp)
+}
+
+
+heatmap(Pop16216overlap*1, scale="none")
+
+#Cluster for 16216
+clust.man <- hclust(dist(Pop16216overlap, method="manhattan"))
+clust.eu <- hclust(dist(Pop16216overlap, method="euclidean"))
+
+plot(clust.man)
+abline(h=2, col="red")
+
+clusters <- cutree(clust.man, h=1.42)
+grep("5543418", names(clusters))
+  #Merge clusters into dataframe with the raw data including CI - name "pos-cluster-1.42" (or something equally informative)
+
+#Create second cluster with cutoff of h=2 and merge into dataframe with raw data - name "pos-cluster-2"
+
+```
+
+### Analyze raw and cluster data together
+```{r}
+#Merge clusters into dataframe with the raw data including CI - name "pos-cluster-1.42" (or something equally informative)
+#Create second cluster with cutoff of h=2 and merge into dataframe with raw data - name "pos-cluster-2"
+
+clust.man <- hclust(dist(Pop16216overlap, method="manhattan"))
+
+str(clust.man)
+table(clust.man$height)
+
+clusters_1.42 <- cutree(clust.man, h=1.42)
+clusters_2 <- cutree(clust.man, h=2)
+
+#Create dataframe objects for the clusters
+str(clusters_1.42)
+cluster_1.42_merge <- data.frame(names(clusters_1.42), clusters_1.42) #Create dataframe for clusters h=1.42
+colnames(cluster_1.42_merge) <- c("LABEL", "POS_CLUSTER_1.42") #Name the columns to match format of Pop1 object
+
+cluster_2_merge <- data.frame(names(clusters_1.42), clusters_2) #Create dataframe for clusters with h=2
+colnames(cluster_2_merge) <- c("LABEL", "POS_CLUSTER_2") #Name the columns to match format of Pop1 object
+
+
+#Pop1_16216
+Pop1_16216 <- Pop1[Pop1$INDIVIDUAL == 16216, ]
+Pop1_16216$X <- NULL
+#Add in the clusters
+Pop16216_raw_clusters <- merge(Pop1_16216, cluster_1.42_merge, by="LABEL")
+Pop16216_raw_clusters <- merge(Pop16216_raw_clusters, cluster_2_merge, by="LABEL")
+
+write.csv(Pop16216_raw_clusters, "/work/lotterhos/2020_CodGenomes_Inversions/outputs/Pop1_16216_clusters.csv")
+
+```
