@@ -1,0 +1,300 @@
+---
+title: "merge-vcf-whole-dataset"
+author: "Lei Curtis"
+date: "2025-09-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up
+```{r load libraries, include=FALSE}
+library(vcfR)
+library(stringr)
+library(StructuralVariantAnnotation)
+library(VariantAnnotation)
+
+setwd("/projects/lotterhos/2020_CodGenomes_Inversions")
+```
+
+```{r read in the files}
+#DELLY vcf
+delly_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files=FALSE, full.names=TRUE)
+delly <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files=FALSE)
+
+#GRIDSS independent vcf
+gridss_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss", all.files = FALSE, full.names = TRUE)
+gridss <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss", all.files = FALSE)
+
+#GRIDSS DELLY vcf
+gridss.delly_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss-delly", all.files = FALSE, full.names = TRUE)
+gridss.delly <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss-delly", all.files = FALSE)
+
+individuals.names <- substr(delly, 12, 16) #extract list of individuals present using delly list
+individuals.names_pop <- substr(gridss, 8, 17) #extract a list of individuals present (including pop) using gridss list
+
+```
+
+## DELLY
+```{r, results='hide', message=FALSE, warning=FALSE}
+##Format vcf output
+invDelly = NULL
+for (i in 1:length(delly)) {
+  dellyTidy <- vcfR2tidy(read.vcfR(delly_files[i])) #Read and transform each vcf into tidy format and assign it to the variable
+  dellyFix <- dellyTidy$fix #Extract the fix and assign it to a variable
+  dellyGT <- dellyTidy$gt #Extract the gt and assign it to a variable
+    
+  dellyFix$GT <- dellyGT$gt_GT #Create a column to store genotype information (extracted from gt)
+  dellyFix$GT_GQ <- dellyGT$gt_GQ
+  dellyFix$GT_FILTER <- dellyGT$gt_FT
+  dellyFix$INDIVIDUAL <- substr(delly[i], 7, 16) #Create a column to store individual's name (extracted from gt)
+  dellyFix$PROGRAM <- "DELLY" #Create a column to distinguish the program of the output
+    
+  dataDELLY <- subset(dellyFix, select=c("INDIVIDUAL", "CHROM", "ID", "POS", "CIPOS", "END", "CIEND", "QUAL", "FILTER", "GT", "GT_GQ", "GT_FILTER", "SVTYPE", "PROGRAM"), subset=SVTYPE=="INV") #Subset only necessary columns
+  
+  invDelly <- rbind(invDelly, dataDELLY) #Store output into a single dataframe
+  print(i)
+}
+
+##Adjust to proper format
+invDelly$STRAND <- NA #Add strand column
+invDelly$CI <- as.numeric(sapply(strsplit(invDelly$CIPOS, ","), `[`, 2)) #Store confidence interval as numeric value in dataset
+#Add new columns for start confidence interval and end confidence interval
+invDelly$POS_PLUS_CI <- invDelly$POS + invDelly$CI
+invDelly$POS_MINUS_CI <- invDelly$POS - invDelly$CI
+invDelly$END_PLUS_CI <- invDelly$END + invDelly$CI
+invDelly$END_MINUS_CI <- invDelly$END - invDelly$CI
+invDelly$SVLEN <- invDelly$END - invDelly$POS #SVLEN is difference between original Start and End Positions
+
+invDelly <- subset(invDelly, select= c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "QUAL", "FILTER", "GT", "GT_GQ", "GT_FILTER", "SVTYPE", "PROGRAM", "STRAND")) #Remove CIPOS and CIEND
+
+```
+
+## GRIDSS (Independent)
+
+```{r}
+##Format vcf output
+dataGRIDSS=NULL
+for (i in 1:length(gridss)) {
+  GRIDSSvcf <- readVcf(gridss_files[i], "gadMor3.0") #Read in vcf file
+  grange <- breakpointRanges(GRIDSSvcf, inferMissingBreakends=TRUE) #Get the GRanges object for vcf file
+  event_types <- simpleEventType(grange) #Get the simplest explanation of SV event
+  GRIDSSsv <- as.data.frame(grange[event_types == "INV"]) #Subset just for inversions
+  info(header(GRIDSSvcf)) = unique(as(rbind(as.data.frame(info(header(GRIDSSvcf))), data.frame(
+    row.names = c("SVLEN"),
+    Number = c("1"),
+    Type = c("Integer"),
+    Description = c("Length of the structural variant"))), "DataFrame")) #Adjust header
+  
+  subsetGRIDSS <- subset(GRIDSSsv, select=c("seqnames", "start", "end", "width", "event", "svLen", "strand", "FILTER", "QUAL")) #Subset only necessary columns
+  subsetGRIDSS$INDIVIDUAL <- substr(gridss[i], 8, 17) #Add column for individual
+  
+  dataGRIDSS <- rbind(dataGRIDSS, subsetGRIDSS)
+  
+  print(i)
+}
+
+invGRIDSS.temp <- data.frame(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+colnames(invGRIDSS.temp)=c("ID", "CHROM", "POS_MINUS_CI", "POS_PLUS_CI", "END_MINUS_CI", "END_PLUS_CI",  "SVLEN", "STRAND", "FILTER", "QUAL", "PROGRAM", "INDIVIDUAL")
+invGRIDSS=NULL
+
+#For-Loop: Modify GRIDSS output to format we want it in
+for(i in 1:length(individuals.names_pop)) {
+  individualdataGRIDSS <- dataGRIDSS[dataGRIDSS$INDIVIDUAL==individuals.names_pop[i], ]
+    for(j in 1:nrow(individualdataGRIDSS)){
+      GRIDSSevent <- individualdataGRIDSS$event[j] #Get the event
+      GRIDSSevent.rows <- individualdataGRIDSS[individualdataGRIDSS$event==GRIDSSevent, ] #Grab the rows which correlate to the  event
+  
+      invGRIDSS.temp$ID <- GRIDSSevent #Copy the event into the new dataframe
+      invGRIDSS.temp$POS_MINUS_CI <- GRIDSSevent.rows[1, ]$start #Map the first start value of the event
+      invGRIDSS.temp$POS_PLUS_CI <- GRIDSSevent.rows[1, ]$end #Map the second start value of the event
+      invGRIDSS.temp$END_MINUS_CI <- GRIDSSevent.rows[2, ]$start #Map the first end value of the event
+      invGRIDSS.temp$END_PLUS_CI <- GRIDSSevent.rows[2, ]$end #Map the second end value of the event
+      #Map the chromosome if they are equal across the two rows
+      if(GRIDSSevent.rows[1, ]$seqnames==GRIDSSevent.rows[2, ]$seqnames){
+        invGRIDSS.temp$CHROM <- GRIDSSevent.rows[1, ]$seqnames}
+      #Map the sv length if they are equal across the two rows
+      if(is.na(GRIDSSevent.rows[1, ]$svLen&GRIDSSevent.rows[2, ]$svLen) | GRIDSSevent.rows[1, ]$svLen==GRIDSSevent.rows[2, ]$svLen){
+        invGRIDSS.temp$SVLEN <- GRIDSSevent.rows[1, ]$svLen}
+      #Map the Filter if they are equal across the two rows
+      if(GRIDSSevent.rows[1, ]$FILTER==GRIDSSevent.rows[2, ]$FILTER){
+        invGRIDSS.temp$FILTER <- GRIDSSevent.rows[1, ]$FILTER}
+      #Map the strand if they are equal across the two rows
+      if(GRIDSSevent.rows[1, ]$strand==GRIDSSevent.rows[2, ]$strand){
+        invGRIDSS.temp$STRAND <- GRIDSSevent.rows[1, ]$strand}
+      #Map the quality value if they are equal across the two rows
+      if(GRIDSSevent.rows[1, ]$QUAL==GRIDSSevent.rows[2, ]$QUAL){
+        invGRIDSS.temp$QUAL <- GRIDSSevent.rows[1, ]$QUAL}
+      invGRIDSS.temp$PROGRAM <- "GRIDSS"
+      invGRIDSS.temp$INDIVIDUAL <- GRIDSSevent.rows[1, ]$INDIVIDUAL
+      
+      invGRIDSS <- rbind(invGRIDSS, invGRIDSS.temp)
+    }
+  
+  print(i)
+}
+
+#invGRIDSS <- subset(invGRIDSS, subset=FILTER=="PASS") #Filter out only the PASS inversions
+invGRIDSS <- unique(invGRIDSS) #Remove duplicate rows
+invGRIDSS$POS <- NA #Add "Pos" column (seen in DELLY file)
+invGRIDSS$END <- NA #Add "End" column (seen in DELLY file)
+invGRIDSS$GT <- NA #Add "GT" column (seen in DELLY file)
+invGRIDSS$SVTYPE <- "INV" #Add "svtype" column showing it's only inversions (seen in DELLY file)
+invGRIDSS$GT_FILTER <- NA
+invGRIDSS$GT_GQ <- NA
+
+invGRIDSS <- invGRIDSS[, c(12, 2, 1, 13, 3, 4, 14, 5, 6, 7, 15, 17, 18, 10, 9, 16, 11, 8)] #Reorder the columns
+
+#colnames(invGRIDSS) <- c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND") #Make column names consistent with DELLY output
+
+```
+
+## GRIDSS (DELLY)
+
+```{r}
+dataGRIDSSDELLY=NULL
+for (i in 1:length(gridss.delly)) {
+  GRIDSSDELLYvcf <- readVcf(gridss.delly_files[i], "gadMor3.0") #Read in vcf file
+  grange2 <- breakpointRanges(GRIDSSDELLYvcf, inferMissingBreakends=TRUE) #Get the GRanges object for vcf file
+  event_types2 <- simpleEventType(grange2) #Get the simplest explanation of SV event
+  GRIDSSDELLYsv <- as.data.frame(grange2[event_types2 == "INV"]) #Subset just for inversions
+  info(header(GRIDSSDELLYvcf)) = unique(as(rbind(as.data.frame(info(header(GRIDSSDELLYvcf))), data.frame(
+    row.names = c("SVLEN"),
+    Number = c("1"),
+    Type = c("Integer"),
+    Description = c("Length of the structural variant"))), "DataFrame")) #Adjust header
+  
+  subsetGRIDSSDELLY <- subset(GRIDSSDELLYsv, select=c("seqnames", "start", "end", "width", "event", "svLen", "strand", "FILTER", "QUAL")) #Subset only necessary columns and PASS inversions
+  subsetGRIDSSDELLY$INDIVIDUAL <- substr(gridss.delly[i], 13, 22) #Add column for individual
+  
+  dataGRIDSSDELLY <- rbind(dataGRIDSSDELLY, subsetGRIDSSDELLY)
+  
+  print(i)
+}
+
+invGRIDSSDELLY.temp <- data.frame(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+colnames(invGRIDSSDELLY.temp)=c("ID", "CHROM", "POS_MINUS_CI", "POS_PLUS_CI", "END_MINUS_CI", "END_PLUS_CI",  "SVLEN", "STRAND", "FILTER", "QUAL", "PROGRAM", "INDIVIDUAL")
+invGRIDSSDELLY=NULL
+
+#For-Loop: Modify GRIDSS output to format we want it in
+for(i in 1:length(individuals.names_pop)) {
+  individualdataGRIDSSDELLY <- dataGRIDSSDELLY[dataGRIDSSDELLY$INDIVIDUAL==individuals.names_pop[i], ]
+    for(j in 1:nrow(individualdataGRIDSSDELLY)){
+      GRIDSSDELLYevent <- individualdataGRIDSSDELLY$event[j] #Get the event
+      GRIDSSDELLYevent.rows <- individualdataGRIDSSDELLY[individualdataGRIDSSDELLY$event==GRIDSSDELLYevent, ] #Grab the rows which correlate to the  event
+  
+      invGRIDSSDELLY.temp$ID <- GRIDSSDELLYevent #Copy the event into the new dataframe
+      invGRIDSSDELLY.temp$POS_MINUS_CI <- GRIDSSDELLYevent.rows[1, ]$start #Map the first start value of the event
+      invGRIDSSDELLY.temp$POS_PLUS_CI <- GRIDSSDELLYevent.rows[1, ]$end #Map the second start value of the event
+      invGRIDSSDELLY.temp$END_MINUS_CI <- GRIDSSDELLYevent.rows[2, ]$start #Map the first end value of the event
+      invGRIDSSDELLY.temp$END_PLUS_CI <- GRIDSSDELLYevent.rows[2, ]$end #Map the second end value of the event
+      #Map the chromosome if they are equal across the two rows
+      if(GRIDSSDELLYevent.rows[1, ]$seqnames==GRIDSSDELLYevent.rows[2, ]$seqnames){
+        invGRIDSSDELLY.temp$CHROM <- GRIDSSDELLYevent.rows[1, ]$seqnames}
+      #Map the sv length if they are equal across the two rows
+      if(is.na(GRIDSSDELLYevent.rows[1, ]$svLen&GRIDSSDELLYevent.rows[2, ]$svLen) | GRIDSSDELLYevent.rows[1, ]$svLen==GRIDSSDELLYevent.rows[2, ]$svLen){
+        invGRIDSSDELLY.temp$SVLEN <- GRIDSSDELLYevent.rows[1, ]$svLen}
+      #Map the Filter if they are equal across the two rows
+      if(GRIDSSDELLYevent.rows[1, ]$FILTER==GRIDSSDELLYevent.rows[2, ]$FILTER){
+        invGRIDSSDELLY.temp$FILTER <- GRIDSSDELLYevent.rows[1, ]$FILTER}
+      #Map the strand if they are equal across the two rows
+      if(GRIDSSDELLYevent.rows[1, ]$strand==GRIDSSDELLYevent.rows[2, ]$strand){
+        invGRIDSSDELLY.temp$STRAND <- GRIDSSDELLYevent.rows[1, ]$strand}
+      #Map the quality value if they are equal across the two rows
+      if(GRIDSSDELLYevent.rows[1, ]$QUAL==GRIDSSDELLYevent.rows[2, ]$QUAL){
+        invGRIDSSDELLY.temp$QUAL <- GRIDSSDELLYevent.rows[1, ]$QUAL}
+      invGRIDSSDELLY.temp$PROGRAM <- "GRIDSS (DELLY)"
+      invGRIDSSDELLY.temp$INDIVIDUAL <- GRIDSSDELLYevent.rows[1, ]$INDIVIDUAL
+      
+      invGRIDSSDELLY <- rbind(invGRIDSSDELLY, invGRIDSSDELLY.temp)
+    }
+   print(i)
+}
+
+#invGRIDSS-DELLY <- subset(invGRIDSS-DELLY, subset=FILTER=="PASS") #Filter out only the PASS inversions
+invGRIDSSDELLY <- unique(invGRIDSSDELLY) #Remove duplicate rows
+invGRIDSSDELLY$POS <- NA #Add "Pos" column (seen in DELLY file)
+invGRIDSSDELLY$END <- NA #Add "End" column (seen in DELLY file)
+invGRIDSSDELLY$GT <- NA #Add "GT" column (seen in DELLY file)
+invGRIDSSDELLY$SVTYPE <- "INV" #Add "svtype" column showing it's only inversions (seen in DELLY file)
+invGRIDSSDELLY$GT_FILTER <- NA
+invGRIDSSDELLY$GT_GQ <- NA
+
+invGRIDSSDELLY <- invGRIDSSDELLY[, c(12, 2, 1, 13, 3, 4, 14, 5, 6, 7, 15, 17, 18, 10, 9, 16, 11, 8)] #Reorder the columns
+
+```
+
+## PCA Data
+
+```{r load and format data}
+breakpoints <- read.csv("1-breakpoints.csv") #Read in breakpoints
+RawSamples <- readRDS("2-Samples (3).rds") #Read in the data for all samples in Sara's dataset
+#RawSamples <- RawSamples[order(RawSamples$Pop, RawSamples$samp_full),] #reorder the columns based on population and individual 
+
+#Convert the characters into numbers to represent arrangement of inversion
+for(i in 1:nrow(RawSamples)){
+  #LG 1
+  if(RawSamples$LG1cluster_nameB[i] == "REF"){
+    RawSamples$LG1cluster_nameB[i] <- "0/0"
+  } else if(RawSamples$LG1cluster_nameB[i]=="ALT"){
+    RawSamples$LG1cluster_nameB[i] <- "1/1"
+  } else if(RawSamples$LG1cluster_nameB[i]=="HET"){
+    RawSamples$LG1cluster_nameB[i] <- "1/0"
+  }
+  #LG 2
+  if(RawSamples$LG2cluster_nameB[i] == "REF"){
+    RawSamples$LG2cluster_nameB[i] <- "0/0"
+  } else if(RawSamples$LG2cluster_nameB[i]=="ALT"){
+    RawSamples$LG2cluster_nameB[i] <- "1/1"
+  } else if(RawSamples$LG2cluster_nameB[i]=="HET"){
+    RawSamples$LG2cluster_nameB[i] <- "1/0"
+  }
+  #LG 7
+  if(RawSamples$LG7cluster_nameB[i] == "REF"){
+    RawSamples$LG7cluster_nameB[i] <- "0/0"
+  } else if(RawSamples$LG7cluster_nameB[i]=="ALT"){
+    RawSamples$LG7cluster_nameB[i] <- "1/1"
+  } else if(RawSamples$LG7cluster_nameB[i]=="HET"){
+    RawSamples$LG7cluster_nameB[i] <- "1/0"
+  }
+  #LG 12
+  if(RawSamples$LG12cluster_nameB[i] == "REF"){
+    RawSamples$LG12cluster_nameB[i] <- "0/0"
+  } else if(RawSamples$LG12cluster_nameB[i]=="ALT"){
+    RawSamples$LG12cluster_nameB[i] <- "1/1"
+  } else if(RawSamples$LG12cluster_nameB[i]=="HET"){
+    RawSamples$LG12cluster_nameB[i] <- "1/0"
+  }
+}
+
+#RawSamples_thesis <- RawSamples[RawSamples$samp_full %in% individuals.names, ] #extract the raw data for only the individuals in the thesis subset
+
+PCAdata <- NULL
+#Add in PCA data for each individual in the dataset
+for (i in 1:length(individuals.names)) {
+  RawSample.temp <- RawSamples[i, ] #Store the current row of the raw data
+  chr1 <- c(RawSample.temp$samp_full, breakpoints$chrom[1], RawSample.temp$label, breakpoints$LGstartPos[1], NA, NA, breakpoints$LGendPos[1], NA, NA, (breakpoints$LGendPos[1]-breakpoints$LGstartPos[1]), RawSample.temp$LG1cluster_nameB, NA, NA, NA, NA, "INV", "PCA", NA)
+  chr2 <- c(RawSample.temp$samp_full, breakpoints$chrom[2], RawSample.temp$label, breakpoints$LGstartPos[2], NA, NA, breakpoints$LGendPos[2], NA, NA, (breakpoints$LGendPos[2]-breakpoints$LGstartPos[2]), RawSample.temp$LG2cluster_nameB, NA, NA, NA, NA, "INV", "PCA", NA)
+  chr7 <- c(RawSample.temp$samp_full, breakpoints$chrom[3], RawSample.temp$label, breakpoints$LGstartPos[3], NA, NA, breakpoints$LGendPos[3], NA, NA, (breakpoints$LGendPos[3]-breakpoints$LGstartPos[3]), RawSample.temp$LG7cluster_nameB, NA, NA, NA, NA, "INV", "PCA", NA)
+  chr12 <- c(RawSample.temp$samp_full, breakpoints$chrom[4], RawSample.temp$label, breakpoints$LGstartPos[4], NA, NA, breakpoints$LGendPos[4], NA, NA, (breakpoints$LGendPos[4]-breakpoints$LGstartPos[4]), RawSample.temp$LG12cluster_nameB, NA, NA, NA, NA, "INV", "PCA", NA)
+  
+  PCAdata.temp <- rbind(chr1, chr2, chr7, chr12)
+  colnames(PCAdata.temp) <- c("INDIVIDUAL", "CHROM", "ID", "POS", "POS_PLUS_CI", "POS_MINUS_CI", "END", "END_PLUS_CI", "END_MINUS_CI", "SVLEN", "GT", "GT_FILTER", "GT_GQ", "QUAL", "FILTER", "SVTYPE", "PROGRAM", "STRAND")
+  
+  PCAdata <- rbind(PCAdata, PCAdata.temp)
+}
+
+```
+
+## Generate final file
+```{r}
+invFINAL <- rbind(invDelly, invGRIDSS) #Combine DELLY and GRIDSS dataframes
+invFINAL <- rbind(invFINAL, invGRIDSSDELLY) #Add GRIDSS-DELLY dataframe
+invFINAL <- rbind(invFINAL, PCAdata) #Add PCAdata
+
+write.csv(invFINAL, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.csv") #Output to .csv for further use
+write.vcf(invFINAL, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.vcf") #Output to .vcf for samplot
+
+```

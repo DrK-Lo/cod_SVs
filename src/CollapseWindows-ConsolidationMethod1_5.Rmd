@@ -1,0 +1,345 @@
+---
+title: "Consolidation Method 1.5"
+author: "Lei Curtis"
+date: "2026-02-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("/projects/lotterhos/2020_CodGenomes_Inversions")
+library(dplyr)
+library(tidyverse)
+```
+
+##Establish Necessary Functions
+
+```{r plotCI}
+plotCI <- function(lowerCI,upperCI,chrom, color="red"){
+  if(sum(!(upperCI >= lowerCI))==0){ # check the upper is greater than the lower
+   dat <- data.frame(lowerCI, upperCI)
+   dat2 <- dat[order(chrom,lowerCI),]
+   suppressWarnings(plot(x=c(dat2$lowerCI, dat2$upperCI),
+      y=rep(1:nrow(dat),2), col=color, ylab="breakpoint call", xlab="bp"))
+   suppressWarnings(arrows(dat2$lowerCI, 1:nrow(dat),
+       dat2$upperCI,1:nrow(dat), col=color))
+   #suppressed warnings for when CI length=0
+  } else {
+    print("plotCI Error: At least one Upper CI is not larger than the corresponding Lower CI")
+  } #end if
+  return(dat2)
+} # end function
+```
+
+```{r function collapseWindow}
+collapseWindow <- function(lowerCI,upperCI, 
+                           chrom,
+                           mergeKey=NA, windowIDstartNum = 1){
+  
+  # check the upper is greater than the lower (LEI EDIT: adjust from > to >=)
+  if(sum(!(upperCI >= lowerCI))!=0){ 
+    print("Error in collapseWindow(): At least one Upper CI is not larger than the corresponding Lower CI")
+    break()
+  }# end if
+  
+  # check that chromosome is supplied
+  if (length(chrom)==0){
+        print("Error in collapseWindow(): You must supply a chromosome or scaffold associated with each window")
+    break()
+  } #end if
+  
+  dat <- data.frame(lowerCI, upperCI, chrom, mergeKey)
+   
+  # First we sort the windows by their starting points
+  dat2 <- dat[order(chrom,lowerCI),]
+  dat2$windowID <- NA # add a column to store the windowID
+  
+   ########
+  # Set the current extent of the CI
+  # Assign the first windowID to the first window
+  currentWindowID <- 1 #ID that you'd like to start with
+  dat2$windowID[1] <- 1
+  currentLowerCI <- dat2$lowerCI[1]
+  currentUpperCI <- dat2$upperCI[1]
+  
+  ########
+  # Create a window DF that will store the window info
+  windowDF <- data.frame(windowID=NA, windowLowerCI=NA,
+                         windowUpperCI = NA)
+  windowDF[1,] <- c(currentWindowID, currentLowerCI,
+                    currentUpperCI)
+  ########
+  ########
+  # Loop through windows
+  for (j in 2:nrow(dat2)){
+
+     # make sure windows are on the same chromosome
+     if (dat2$chrom[j] == dat2$chrom[j-1]){
+       
+       # if the lower CI of this window is LESS than the
+       # currentUpperCI that is stored from previous window(s)
+       # then the windows DO overlap
+       if(dat2$lowerCI[j] <= currentUpperCI){ 
+         # no update to currentLowerCI
+         # if dat2$upperCI[j] > currentUpperCI,
+         # then update the currentUpperCI 
+         currentUpperCI <- dat2$upperCI[j]
+         # and update the CIs stored in the window df
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         #assign same Id to this window
+         dat2$windowID[j] <- currentWindowID
+         
+       }else{
+       # if the lower CI of this window is GREATER than the
+       # currentUpperCI that is stored from previous window(s)
+       # then the windows DO NOT overlap
+         currentLowerCI <- dat2$lowerCI[j]
+         currentUpperCI <- dat2$upperCI[j]
+         # update Id and assign to this window
+         currentWindowID <- currentWindowID + 1
+         dat2$windowID[j] <- currentWindowID
+         
+         # update window DF
+         windowDF[currentWindowID,] <- rep(NA,3)
+         windowDF$windowID[currentWindowID] <- currentWindowID
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         windowDF$windowLowerCI[currentWindowID] <- currentLowerCI
+       } # end if statements to compare CI on same chrom
+       
+     }else{ # if the next window is on a different chromosome
+         currentLowerCI <- dat2$lowerCI[j]
+         currentUpperCI <- dat2$upperCI[j]
+         # update Id and assign to this window
+         currentWindowID <- currentWindowID + 1
+         dat2$windowID[j] <- currentWindowID
+         # update window DF
+         windowDF[currentWindowID,] <- rep(NA,3)
+         windowDF$windowID[currentWindowID] <- currentWindowID
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         windowDF$windowLowerCI[currentWindowID] <- currentLowerCI
+     }
+     
+   }# end loop through windows
+  dat2$windowID=as.character(dat2$windowID + windowIDstartNum - 1)
+  windowDF$windowID=as.character(windowDF$windowID + windowIDstartNum - 1)
+  dat3 <- left_join(dat2, windowDF, by = "windowID")
+  return(list(windowDF=windowDF, windowCalls=dat3))
+} # end function
+```
+
+# Run Collapse Windows
+
+```{r read in data}
+INV_dataset <- read.csv("/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.csv")
+INV_pca <-INV_dataset[INV_dataset$PROGRAM=="PCA", ]
+INV.dataset <- INV_dataset[INV_dataset$PROGRAM!="PCA", ]
+INV.dataset <- INV.dataset[INV.dataset$CHROM=="NC_044048.1"|INV.dataset$CHROM=="NC_044049.1"| INV.dataset$CHROM=="NC_044050.1"|INV.dataset$CHROM=="NC_044051.1"|INV.dataset$CHROM=="NC_044052.1"| INV.dataset$CHROM=="NC_044053.1"|INV.dataset$CHROM=="NC_044054.1"|INV.dataset$CHROM=="NC_044055.1"| INV.dataset$CHROM=="NC_044056.1"|INV.dataset$CHROM=="NC_044057.1"|INV.dataset$CHROM=="NC_044058.1"| INV.dataset$CHROM=="NC_044059.1"|INV.dataset$CHROM=="NC_044060.1"|INV.dataset$CHROM=="NC_044061.1"|  INV.dataset$CHROM=="NC_044062.1"|INV.dataset$CHROM=="NC_044063.1"|INV.dataset$CHROM=="NC_044064.1"| INV.dataset$CHROM=="NC_044065.1"|INV.dataset$CHROM=="NC_044066.1"|INV.dataset$CHROM=="NC_044067.1"| INV.dataset$CHROM=="NC_044068.1"|INV.dataset$CHROM=="NC_044069.1"|INV.dataset$CHROM=="NC_044070.1",] 
+INV.dataset$X <- NULL
+colnames(INV.dataset) <- c("Individual", "Chrom", "ID", "StartBreakpoint", "StartBreakpoint_UpperCI", "StartBreakpoint_LowerCI", "EndBreakpoint", "EndBreakpoint_UpperCI", "EndBreakpoint_LowerCI", "SVLen", "Qual", "Filter", "GT", "GT_Qual", "GT_Filter", "SVType", "Program", "Strand")
+INV.dataset <- INV.dataset[order(INV.dataset$StartBreakpoint_LowerCI, INV.dataset$EndBreakpoint_LowerCI),]
+
+
+#append 5000bp confidence intervals
+  ##5000bp selected as a conservative distance based on the looking at the dataset
+for(i in 1:nrow(INV.dataset)){
+  if(INV.dataset$StartBreakpoint_UpperCI[i] > INV.dataset$StartBreakpoint_LowerCI[i]){
+    INV.dataset$StartBreakpoint_NewUpperCI[i] <- INV.dataset$StartBreakpoint_UpperCI[i] + 5000
+    INV.dataset$StartBreakpoint_NewLowerCI[i] <- INV.dataset$StartBreakpoint_LowerCI[i] - 5000
+  } else {
+    INV.dataset$StartBreakpoint_NewUpperCI[i] <- INV.dataset$StartBreakpoint_LowerCI[i] + 5000
+    INV.dataset$StartBreakpoint_NewLowerCI[i] <- INV.dataset$StartBreakpoint_UpperCI[i] - 5000
+  }
+  
+  if(INV.dataset$EndBreakpoint_UpperCI[i] > INV.dataset$EndBreakpoint_LowerCI[i]){
+    INV.dataset$EndBreakpoint_NewUpperCI[i] <- INV.dataset$EndBreakpoint_UpperCI[i] + 5000
+    INV.dataset$EndBreakpoint_NewLowerCI[i] <- INV.dataset$EndBreakpoint_LowerCI[i] - 5000
+  } else {
+    INV.dataset$EndBreakpoint_NewUpperCI[i] <- INV.dataset$EndBreakpoint_LowerCI[i] + 5000
+    INV.dataset$EndBreakpoint_NewLowerCI[i] <- INV.dataset$EndBreakpoint_UpperCI[i] - 5000
+    }
+}
+INV.dataset$StartBreakpoint_NewLowerCI[INV.dataset$StartBreakpoint_NewLowerCI<0] <-0 #Make sure any negative values are 0
+
+#create merge key (anything text)
+INV.dataset$MergeKey <- paste(INV.dataset$Individual, INV.dataset$ID, seq(from=1, to=nrow(INV.dataset), by=1), sep="_")
+
+#sanity check - all UpperCI < LowerCI
+##Since True=1, sum of the values should be equal to the number of rows in the dataset
+sum((INV.dataset$StartBreakpoint_NewUpperCI >= INV.dataset$StartBreakpoint_NewLowerCI)) #PASSED
+sum((INV.dataset$EndBreakpoint_NewUpperCI >= INV.dataset$EndBreakpoint_NewLowerCI)) #PASSED
+
+```
+
+```{r apply plotCI}
+par(mfrow=c(2,1), mar=c(4,4,1,1))
+plotCI(INV.dataset$StartBreakpoint_NewLowerCI, INV.dataset$StartBreakpoint_NewUpperCI, INV.dataset$Chrom)
+plotCI(INV.dataset$EndBreakpoint_NewLowerCI, INV.dataset$EndBreakpoint_NewUpperCI, col="blue", INV.dataset$Chrom)
+
+```
+
+```{r apply collapseWindow}
+#Start positions
+start <- collapseWindow(INV.dataset$StartBreakpoint_NewLowerCI, INV.dataset$StartBreakpoint_NewUpperCI, INV.dataset$Chrom, INV.dataset$MergeKey)
+startWindows <- start$windowDF
+startWindows_ind <- left_join(INV.dataset, start$windowCalls, 
+                              by=join_by("Chrom"=="chrom", "StartBreakpoint_NewLowerCI"=="lowerCI", "StartBreakpoint_NewUpperCI"=="upperCI", "MergeKey"=="mergeKey"))
+
+#End positions
+end <- collapseWindow(INV.dataset$EndBreakpoint_NewLowerCI, INV.dataset$EndBreakpoint_NewUpperCI, INV.dataset$Chrom, INV.dataset$MergeKey)
+endWindows <- end$windowDF
+endWindows_ind <- left_join(INV.dataset, end$windowCalls, 
+                              by=join_by("Chrom"=="chrom", "EndBreakpoint_NewLowerCI"=="lowerCI", "EndBreakpoint_NewUpperCI"=="upperCI", "MergeKey"=="mergeKey"))
+
+#sanity check
+if (nrow(startWindows_ind) != nrow(endWindows_ind)){
+  print("Error: different number of rows in `startWindows_ind` and `endWindows_ind`")
+  break
+} #PASSED
+
+```
+
+##Interpret
+
+```{r assess support}
+#how many individuals support the windows
+n_ind_startWindows <- rowSums(table(startWindows_ind$windowID, startWindows_ind$Individual)>0)
+startWindowsNew <- left_join(startWindows, data.frame(n_ind_startWindows, windowID=names(n_ind_startWindows)), by="windowID")
+
+n_ind_endWindows <- rowSums(table(endWindows_ind$windowID, endWindows_ind$Individual)>0)
+endWindowsNew <- left_join(endWindows, data.frame(n_ind_endWindows, windowID=names(n_ind_endWindows)), by="windowID")
+
+#how many methods support the window?
+n_method_startWindows <- rowSums(table(startWindows_ind$windowID, startWindows_ind$Program)>0)
+startWindowsNew <- left_join(startWindowsNew, data.frame(n_method_startWindows, windowID=names(n_method_startWindows)), by="windowID") #ADJUSTMENT TO KATIE'S CODE ->  adding methods to startWindowsNew rather than creating new object
+
+n_method_endWindows <- rowSums(table(endWindows_ind$windowID, endWindows_ind$Program)>0)
+endWindowsNew <- left_join(endWindowsNew, data.frame(n_method_endWindows, windowID=names(n_method_endWindows)), by="windowID")
+
+```
+
+```{r combine start and end windows dataframes}
+INV.dataset_start <- left_join(startWindows_ind, startWindowsNew)
+INV.dataset_end <- left_join(endWindows_ind, endWindowsNew)
+
+#sanity check    
+if (nrow(INV.dataset_start) != nrow(INV.dataset_end)){
+  print("Error: different number of rows in `start dataset` and `end dataset`")
+  break
+} #PASSED
+if (sum(which(colnames(INV.dataset_end) %in% c("windowID","windowLowerCI","windowUpperCI"))
+!= which(colnames(INV.dataset_start) %in% c("windowID","windowLowerCI","windowUpperCI")))){
+  print("Error in combining datasets, column names don't match")
+  break
+} #PASSED
+
+#rename columns
+rename <- which(colnames(INV.dataset_start) %in% c("windowID","windowLowerCI","windowUpperCI"))
+colnames(INV.dataset_start)[rename] <- c("windowID_StartBreakpoint","window_StartLowerCI","window_StartUpperCI")
+colnames(INV.dataset_end)[rename] <- c("windowID_EndBreakpoint","window_EndLowerCI","window_EndUpperCI")
+
+#combine
+INV.dataset_merged <- left_join(INV.dataset_start, INV.dataset_end)
+
+##sanity check
+if(nrow(INV.dataset_merged) != nrow(INV.dataset_start) && nrow(INV.dataset_end)) {
+  print("Error: different number of rows in `invdat` and `invdat_full`")
+  break
+} #PASSED
+
+```
+
+##Consolidate - Method 1.5: GT not 0/0, 15 individuals, 3 methods, at least one "PASS" in window
+
+```{r pass criteria}
+## The next step is to ID the inversions and produced a filtered set of inversions
+## based on minimum criteria
+INV.dataset_merged$InversionID <- paste(INV.dataset_merged$windowID_StartBreakpoint, INV.dataset_merged$windowID_EndBreakpoint, sep="-")
+
+## per inversion id
+### minimum number of individuals supporting the call
+n_ind_min <- 15 
+### number of methods supporting the call
+n_methods_min <- 3
+### gt != 0/0 and "PASS" quality filter within the inversion
+#InversionID <- unique(INV.dataset_merged$InversionID)
+INV.dataset_merged$'Filter-GT_Pass'=FALSE
+INV.dataset_merged$'Filter-GT_Pass'[INV.dataset_merged$Filter=="PASS"]=TRUE
+  summary(INV.dataset_merged$'Filter-GT_Pass')
+INV.dataset_merged$'Filter-GT_Pass'[INV.dataset_merged$GT=="0/0"]=FALSE
+  summary(INV.dataset_merged$'Filter-GT_Pass')
+
+# for (i in 1:length(InversionID)) {
+#   data.temp <- INV.dataset_merged[INV.dataset_merged$InversionID==InversionID[i], ]
+#   for (j in 1:nrow(data.temp)) {
+#     if(data.temp$GT[j]=="0/0"|is.na(data.temp$GT[j])){
+#       data.temp$GT_Pass <- FALSE
+#     }else if (data.temp$GT[j]=="0/1"|data.temp$GT[j]=="1/1"){
+#       data.temp$GT_Pass <- TRUE
+#       break
+#     }
+#   }
+#   for (k in 1:nrow(data.temp)) {
+#     if(data.temp$Filter[k]=="PASS"){
+#       data.temp$Filter_Pass <- TRUE
+#       break
+#     }else{
+#       data.temp$Filter_Pass <- FALSE
+#     }
+#   }
+#   INV_gt.qual_pass <- rbind(INV_gt.qual_pass, data.temp)
+# }
+
+# pass
+#INV.dataset_merged <- left_join(INV.dataset_merged, INV_gt.qual_pass)
+INV.dataset_merged$PassInv <- (INV.dataset_merged$'Filter-GT_Pass'==TRUE &
+                          INV.dataset_merged$n_ind_startWindows >= n_ind_min & 
+                          INV.dataset_merged$n_ind_endWindows >= n_ind_min &
+                          INV.dataset_merged$n_method_startWindows >= n_methods_min &
+                          INV.dataset_merged$n_method_endWindows >= n_methods_min)
+summary(INV.dataset_merged$PassInv)
+
+```
+
+```{r filter to final dataset}
+
+# filter the indidivual-level inversion dataframe
+# this is the dataframe to analyze for frequencies of inversions across individuals
+INV.dataset_filtered <- INV.dataset_merged[INV.dataset_merged$PassInv,]
+INV.dataset_analyze <- select(INV.dataset_filtered, InversionID, Individual, Chrom,
+                  windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
+                  SVType, GT, GT_Qual, GT_Filter, Strand, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows) # Full dataset of inversion and information; NOTE will need to do some manual adjustments to combine the GT, Strand, and Inversion information
+
+# filter the last dataframe to individual inversions
+# this is the dataset to analyze for inversion size distribution
+INV.dataset_analyze_final = select(INV.dataset_analyze, InversionID, Chrom,
+                  windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
+                  SVType, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows)
+INV.dataset_analyze_final = filter(INV.dataset_analyze_final,!duplicated(INV.dataset_analyze_final))
+```
+
+##Analyze and vizualize
+
+```{r find the maximum and minimum sizes}
+# find the maximum size of each inversion from the lowest CI of the start
+# breakpoint to the highest CI of the end breakpoint
+INV.dataset_analyze_final$invSizeMax <-  INV.dataset_analyze_final$window_EndUpperCI - 
+                              INV.dataset_analyze_final$window_StartLowerCI
+
+# find the minimum size of each inversion from the highest CI of the start
+# breakpoint to the lowest CI of the end breakpoint
+INV.dataset_analyze_final$invSizeMin <-  INV.dataset_analyze_final$window_EndLowerCI - 
+                              INV.dataset_analyze_final$window_StartUpperCI
+```
+
+##Save to csv
+
+```{r}
+write.csv(INV.dataset_analyze, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_filtered.csv") #Output the entire inversion dataset (including individual)  to .csv for further use
+
+write.csv(INV.dataset_analyze_final, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Output the unique inversion dataset to .csv for further use
+
+# save pca inversion dataset as its own csv
+write.csv(INV_pca, "/projects/lotterhos/2020_CodGenomes_Inversions/PCA.csv")
+
+```

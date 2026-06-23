@@ -1,0 +1,387 @@
+---
+title: "CollapseWindows"
+output: html_document
+date: "2025-04-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+This chunk generates data like we collected
+```{r generate breakpoints}
+n=5 #number of breakpoints simulated for this inversion
+# assume each breakpoint start point could be within 500 bp of each other
+# assume each CI is between 50 and 500 bases long
+
+# inversion 1
+set.seed(20934580)
+inv_startBreakPt_lowerCI <- round(runif(n, 50, 500),0)
+set.seed(94389523)
+inv_startBreakPt_upperCI <- round(inv_startBreakPt_lowerCI + runif(n,100, 500),0)
+set.seed(34853453)
+inv_endBreakPt_lowerCI <- round(runif(n, 1000, 1500),0)
+set.seed(54692349)
+inv_endBreakPt_upperCI <- round(inv_endBreakPt_lowerCI + runif(n,100, 500),0)
+
+# inversion 2
+set.seed(5767871)
+inv_startBreakPt_lowerCI2 <- round(runif(n, 3000, 3500),0)
+set.seed(7108100)
+inv_startBreakPt_upperCI2 <- round(inv_startBreakPt_lowerCI2 + runif(n,100, 500),0)
+set.seed(9054960)
+inv_endBreakPt_lowerCI2 <- round(runif(n, 4500, 5000),0)
+set.seed(8137034)
+inv_endBreakPt_upperCI2 <- round(inv_endBreakPt_lowerCI2 + runif(n,100, 500),0)
+
+invdat1 <- data.frame(inv_startBreakPt_lowerCI,
+                    inv_startBreakPt_upperCI,
+                    inv_endBreakPt_lowerCI,
+                    inv_endBreakPt_upperCI,
+                    chrom = 1)
+invdat2 <- data.frame(inv_startBreakPt_lowerCI=inv_startBreakPt_lowerCI2,
+                    inv_startBreakPt_upperCI=inv_startBreakPt_upperCI2,
+                    inv_endBreakPt_lowerCI=inv_endBreakPt_lowerCI2,
+                    inv_endBreakPt_upperCI=inv_endBreakPt_upperCI2,
+                    chrom = 1)
+
+invdat3 <- data.frame(inv_startBreakPt_lowerCI=inv_startBreakPt_lowerCI+10,
+                    inv_startBreakPt_upperCI=inv_startBreakPt_upperCI+10,
+                    inv_endBreakPt_lowerCI=inv_endBreakPt_lowerCI+10,
+                    inv_endBreakPt_upperCI=inv_endBreakPt_upperCI+10,
+                    chrom = 2)
+invdat <- rbind(invdat1, invdat2, invdat3)
+rm(invdat1, invdat2, invdat3)
+
+# make up some more data
+invdat$mergeKey <- replicate(nrow(invdat),paste(sample(letters, 8), collapse=""))
+invdat$method <- sample(c("methodA", "methodB"),nrow(invdat), replace=TRUE)
+invdat$indID <- sample(c("ind1", "ind2","ind3","ind4"),nrow(invdat), replace=TRUE)
+```
+
+
+```{r plotCI}
+plotCI <- function(lowerCI,upperCI,chrom, color="red"){
+  if(sum(!(upperCI > lowerCI))==0){ # check the upper is greater than the lower
+   dat <- data.frame(lowerCI, upperCI)
+   dat2 <- dat[order(chrom,lowerCI),]
+   plot(x=c(dat2$lowerCI, dat2$upperCI),
+      y=rep(1:nrow(dat),2), col=color, ylab="breakpoint call", xlab="bp")
+   arrows(dat2$lowerCI, 1:nrow(dat),
+       dat2$upperCI,1:nrow(dat), col=color)
+  }else{
+    print("plotCI Error: At least one Upper CI is not larger than the corresponding Lower CI")
+  } #end if
+  return(dat2)
+} # end function
+```
+
+```{r apply plotCI}
+par(mfrow=c(2,1), mar=c(4,4,1,1))
+plotCI(invdat$inv_startBreakPt_lowerCI, 
+       invdat$inv_startBreakPt_upperCI, invdat$chrom)
+plotCI(invdat$inv_endBreakPt_lowerCI, 
+       invdat$inv_endBreakPt_upperCI, col="blue",
+       invdat$chrom)
+```
+
+
+
+chrom <- invdat$chrom
+lowerCI <- invdat$inv_startBreakPt_lowerCI
+upperCI <- invdat$inv_startBreakPt_upperCI
+
+```{r function collapseWindow}
+
+collapseWindow <- function(lowerCI,upperCI, 
+                           chrom,
+                           mergeKey=NA, windowIDstartNum = 1){
+  
+  # check the upper is greater than the lower
+  if(sum(!(upperCI > lowerCI))!=0){ 
+    print("Error in collapseWindow(): At least one Upper CI is not larger than the corresponding Lower CI")
+    break()
+  }# end if
+  
+  # check that chromosome is supplied
+  if (length(chrom)==0){
+        print("Error in collapseWindow(): You must supply a chromosome or scaffold associated with each window")
+    break()
+  } #end if
+  
+  dat <- data.frame(lowerCI, upperCI, chrom, mergeKey)
+   
+  # First we sort the windows by their starting points
+  dat2 <- dat[order(chrom,lowerCI),]
+  dat2$windowID <- NA # add a column to store the windowID
+  
+   ########
+  # Set the current extent of the CI
+  # Assign the first windowID to the first window
+  currentWindowID <- 1 #ID that you'd like to start with
+  dat2$windowID[1] <- 1
+  currentLowerCI <- dat2$lowerCI[1]
+  currentUpperCI <- dat2$upperCI[1]
+  
+  ########
+  # Create a window DF that will store the window info
+  windowDF <- data.frame(windowID=NA, windowLowerCI=NA,
+                         windowUpperCI = NA)
+  windowDF[1,] <- c(currentWindowID, currentLowerCI,
+                    currentUpperCI)
+  ########
+  ########
+  # Loop through windows
+  for (j in 2:nrow(dat2)){
+
+     # make sure windows are on the same chromosome
+     if (dat2$chrom[j] == dat2$chrom[j-1]){
+       
+       # if the lower CI of this window is LESS than the
+       # currentUpperCI that is stored from previous window(s)
+       # then the windows DO overlap
+       if(dat2$lowerCI[j] <= currentUpperCI){ 
+         # no update to currentLowerCI
+         # if dat2$upperCI[j] > currentUpperCI,
+         # then update the currentUpperCI 
+         currentUpperCI <- dat2$upperCI[j]
+         # and update the CIs stored in the window df
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         #assign same Id to this window
+         dat2$windowID[j] <- currentWindowID
+         
+       }else{
+       # if the lower CI of this window is GREATER than the
+       # currentUpperCI that is stored from previous window(s)
+       # then the windows DO NOT overlap
+         currentLowerCI <- dat2$lowerCI[j]
+         currentUpperCI <- dat2$upperCI[j]
+         # update Id and assign to this window
+         currentWindowID <- currentWindowID + 1
+         dat2$windowID[j] <- currentWindowID
+         
+         # update window DF
+         windowDF[currentWindowID,] <- rep(NA,3)
+         windowDF$windowID[currentWindowID] <- currentWindowID
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         windowDF$windowLowerCI[currentWindowID] <- currentLowerCI
+       } # end if statements to compare CI on same chrom
+       
+     }else{ # if the next window is on a different chromosome
+         currentLowerCI <- dat2$lowerCI[j]
+         currentUpperCI <- dat2$upperCI[j]
+         # update Id and assign to this window
+         currentWindowID <- currentWindowID + 1
+         dat2$windowID[j] <- currentWindowID
+         # update window DF
+         windowDF[currentWindowID,] <- rep(NA,3)
+         windowDF$windowID[currentWindowID] <- currentWindowID
+         windowDF$windowUpperCI[currentWindowID] <- currentUpperCI
+         windowDF$windowLowerCI[currentWindowID] <- currentLowerCI
+     }
+     
+   }# end loop through windows
+  dat2$windowID=as.character(dat2$windowID + windowIDstartNum - 1)
+  windowDF$windowID=as.character(windowDF$windowID + windowIDstartNum - 1)
+  dat3 <- left_join(dat2, windowDF, by = "windowID")
+  return(list(windowDF=windowDF, windowCalls=dat3))
+} # end function
+
+```
+
+
+Example application of the `collapseWindow()` function
+```{r}
+head(invdat)
+
+# Run collapseWindow on the start Break point columns
+st <- collapseWindow(invdat$inv_startBreakPt_lowerCI,
+               invdat$inv_startBreakPt_upperCI, 
+               invdat$chrom,
+               invdat$mergeKey)
+st
+
+# Run collapseWindow on the end Break point columns
+# make sure to give a start ID that is greater than the previous IDs
+end <- collapseWindow(invdat$inv_endBreakPt_lowerCI,
+               invdat$inv_endBreakPt_upperCI, 
+               invdat$chrom,
+               invdat$mergeKey,
+               windowIDstartNum = 10)
+end
+
+# create a list of all the Windows
+startWindows <- st$windowDF
+endWindows <- end$windowDF
+
+# create a list of all individuals with window ID
+startWindows_ind <- left_join(invdat, st$windowCalls, by=
+                                join_by("mergeKey", "chrom",
+                                        "inv_startBreakPt_lowerCI"=="lowerCI",
+                                        "inv_startBreakPt_upperCI"=="upperCI"))
+# create a list of all individuals with window ID
+endWindows_ind <- left_join(invdat, end$windowCalls, by=
+                              join_by("mergeKey", "chrom",
+                                        "inv_endBreakPt_lowerCI"=="lowerCI",
+                                        "inv_endBreakPt_upperCI"=="upperCI"))
+
+# sanity check
+if (nrow(startWindows_ind) != nrow(endWindows_ind)){
+  print("Error: different number of rows in `startWindows_ind` and `endWindows_ind`")
+  break
+}
+```
+
+
+```{r}
+## The next step is to collect information from invdat_window on how many
+## individuals support each window.
+## Then store that information in allWindows
+
+# number of individuals supporting start window 
+
+n_ind_start <- rowSums(table(startWindows_ind$windowID, startWindows_ind$indID)>0)
+startWindows2 <- left_join(startWindows, 
+                         data.frame(n_ind_start, windowID=names(n_ind_start)),
+                        by="windowID")
+
+
+# number of individuals supporting end window
+n_ind_end <- rowSums(table(endWindows_ind$windowID, endWindows_ind$indID)>0)
+endWindows2 <- left_join(endWindows, 
+                         data.frame(n_ind_end, windowID=names(n_ind_end)),
+                        by="windowID")
+```
+
+
+```{r}
+## The next step is to collect information from invdat_window on
+## how many methods support each window
+## Then store that information in allWindows
+
+# number of methods supporting start window 
+n_methods_start <- rowSums(table(startWindows_ind$windowID, startWindows_ind$method)>0)
+n_methods_start
+startWindows3 <- left_join(startWindows2, 
+                         data.frame(n_methods_start, 
+                                    windowID=names(n_methods_start)),
+                        by="windowID")
+
+# number of methods supporting end window
+n_methods_end <- rowSums(table(endWindows_ind$windowID, endWindows_ind$method)>0)
+endWindows3 <- left_join(endWindows2, 
+                         data.frame(n_methods_end, 
+                                    windowID=names(n_methods_end)),
+                        by="windowID")
+
+rm(startWindows, startWindows2, endWindows, endWindows2)
+```
+
+
+ 
+```{r}
+## The next step is to combine the datasets with the number of individuals and methods supported for each breakpoint
+
+str(invdat)
+str(startWindows_ind)
+str(endWindows_ind)
+str(startWindows3)
+str(endWindows3)
+
+invdat_full_start <- left_join(startWindows_ind, startWindows3)
+str(invdat_full_start)
+
+invdat_full_end <- left_join(endWindows_ind, endWindows3)
+str(invdat_full_end)
+
+# sanity check    
+if (nrow(invdat_full_start) != nrow(invdat_full_end)){
+  print("Error: different number of rows in `invdat_full_start` and `invdat_full_end`")
+  break
+}
+if (sum(which(colnames(invdat_full_end) %in% c("windowID","windowLowerCI","windowUpperCI"))
+!= which(colnames(invdat_full_start) %in% c("windowID","windowLowerCI","windowUpperCI")))){
+  print("Error in combining datasets, column names don't match")
+  break
+}
+
+## Rename the columns
+renamecols <- which(colnames(invdat_full_start) %in% c("windowID","windowLowerCI","windowUpperCI"))
+
+colnames(invdat_full_start)[renamecols] <- c("windowID_start","windowLowerCI_start","windowUpperCI_start")
+
+colnames(invdat_full_end)[renamecols] <- c("windowID_end","windowLowerCI_end","windowUpperCI_end")
+
+str(invdat_full_start)
+str(invdat_full_end)
+
+invdat_full <- left_join(invdat_full_start, invdat_full_end)
+
+# sanity check    
+if (nrow(invdat) != nrow(invdat_full)){
+  print("Error: different number of rows in `invdat` and `invdat_full`")
+  break
+}
+``` 
+
+```{r}
+## The next step is to ID the inversions and produced a filtered set of inversions
+## based on minimum criteria
+
+n_ind_min <- 2 # the minimum number of individuals supporting the call
+                # this number will vary depending on the investigator's sample size
+n_methods_min <- 2 # the minimum number of methods supporting the call
+                # this number will vary depending on the number of methods used
+
+invdat_full$inversionID <- paste(invdat_full$windowID_start, invdat_full$windowID_end, sep="-")
+
+# An inversion passes if both breakpoints are supported by the minimum number
+# of individuals and methods
+invdat_full$PassInv <- (invdat_full$n_ind_start >= n_ind_min & 
+                          invdat_full$n_ind_end >= n_ind_min &
+                          invdat_full$n_methods_start >= n_methods_min &
+                          invdat_full$n_methods_end >= n_methods_min)
+# Again, the PASS criteria may take into account other columns, such as a quality
+# score from the program
+invdat_full 
+```
+
+```{r}
+# filter the indidivual-level inversion dataframe
+# this is the dataframe to analyze for frequencies of inversions across individuals
+invdat_filtered <- invdat_full[invdat_full$PassInv,]
+invdat_filtered
+```
+
+
+```{r}
+# filter the last dataframe to individual inversions
+# this is the dataset to analyze for inversion size distribution
+inv_list <- select(invdat_filtered, inversionID, 
+                   windowID_start, windowLowerCI_start, windowUpperCI_start,
+                   windowID_end, windowLowerCI_end, windowUpperCI_end) 
+
+inv_list_final = filter(inv_list,!duplicated(inv_list))
+inv_list_final
+
+# find the maximum size of each inversion from the lowest CI of the start
+# breakpoint to the highest CI of the end breakpoint
+inv_list_final$invSizeMax <-  inv_list_final$windowUpperCI_end - 
+                              inv_list_final$windowLowerCI_start
+
+# find the minimum size of each inversion from the highest CI of the start
+# breakpoint to the lowest CI of the end breakpoint
+inv_list_final$invSizeMin <-  inv_list_final$windowLowerCI_end - 
+                              inv_list_final$windowUpperCI_start
+
+par(mfrow=c(1,1))
+hist(inv_list_final$invSizeMax, col="cornflowerblue",
+     breaks=seq(0, 10000, by=100), main="", xlab="Inversion size",
+     border=adjustcolor("grey80",0))
+hist(inv_list_final$invSizeMin, col=adjustcolor("cornflowerblue",0.4),
+     border=adjustcolor("grey",0),
+     breaks=seq(0, 10000, by=100), add=TRUE)
+# TO DO: add a legend for the dark colors maximum size distribution
+# and light colors minimum size distribution
+```
