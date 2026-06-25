@@ -31,7 +31,7 @@ gadmor3genome <- toGRanges(data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_04
 
 #Chr1 Plot
 chrom1 <- toGRanges(INV[INV$Chrom=="NC_044048.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom1 <- plotKaryotype(genome=gadmor3genome, chromosome="NC_044048.1")
+kp.chrom1 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044048.1")
 kpPlotRegions(kp.chrom1, data=chrom1, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom1, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
