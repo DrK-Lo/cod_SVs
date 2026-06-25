@@ -58,6 +58,12 @@ head(map$chromosome)
 chromosomes <- levels(as.factor(map$chromosome))
 chromosomes
 
+#### prep for karyoploter ####
+#Create custom genome
+gadmor3_df <- data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1"), start=c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), end=c(30875876, 28732775, 30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694, 34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006))
+head(gadmor3_df)
+gadmor3genome <- toGRanges(gadmor3_df)
+head(gadmor3genome)
 
 # Chromsome 1 start and end based on PCA
 # start at location 11299038 end at location 28292263
@@ -69,7 +75,7 @@ local_pca_results <- NULL
 maxPCAwindowID <- 0
 dir.create(paste0("../results-MDSbyChrom-", window_size,"windows"))
 for (chr in chromosomes) {
-  #chr = chromosomes[2] #uncomment for testing
+  #chr = chromosomes[1] #uncomment for testing
   chr_num <- as.numeric(substr(chr,8,9))-47
   print(chr_num)
   chr_data_t <- t(G[,which(map$chromosome == chr)])
@@ -218,10 +224,13 @@ for (chr in chromosomes) {
   par(mfrow=c(6,1), mar=c(1,4,0.4,0), oma=c(4,0,4,0))
   PCA_outlier2 <- PCA_outlier
   PCA_outlier2[which(PCA_outlier==FALSE)]=NA
+
   plot(this_chrom$start_MB,rep(1, times=nrow(fit10d$points)),  ylim=c(0.9,1.1), col="grey", ylab="",xaxt="n", yaxt="n", bty="n", pch=19)
   points(this_chrom$start_MB, PCA_outlier2, lwd=5,  col="red")
     text(this_chrom$start_MB[!is.na(this_chrom$PCAwindowID_plot)], y=rep(c(1.05, 1.08), times=nrow(fit10d$points)/2), 
          labels = this_chrom$PCAwindowID_plot[!is.na(this_chrom$PCAwindowID_plot)], cex=0.5, srt=90)
+ 
+    
   plot(this_chrom$start_MB, fit10d$points[,1], xlab="Position", ylab="MDS1", col=outlier_MDS1+1, pch=outlier_MDS1+20, xaxt="n", bty="l", las=1, cex=1.5)  
   plot(this_chrom$start_MB, fit10d$points[,2], xlab="Position", ylab="MDS2", col=outlier_MDS2+1, pch=outlier_MDS2+20, xaxt="n", bty="l", las=1, cex=1.5) 
   plot(this_chrom$start_MB, fit10d$points[,3], xlab="Position", ylab="MDS3", col=outlier_MDS3+1, pch=outlier_MDS3+20, xaxt="n", bty="l", las=1, cex=1.5) 
@@ -229,8 +238,22 @@ for (chr in chromosomes) {
   plot(this_chrom$start_MB, fit10d$points[,5], ylab="MDS5", col=outlier_MDS5+1, pch=outlier_MDS5+20,  bty="l", las=1, cex=1.5, xlab="Position (MB)")
   mtext(paste0("Chromosome ", chr_num," (" ,chr, ")"), side=3, outer=TRUE, adj=0.1)
   mtext("Position (MB)", side=1, outer=TRUE, line=2)
+
   dev.off()
   #dev.off()
+  
+  pdf(paste0("../results-MDSbyChrom-",window_size,"windows/",chr,"_localPCA_",chr_num,"_",window_size,"SNPwindows_KaryoPlot.pdf"),width=6, height=2)
+  start <- tapply(this_chrom$start_pos,this_chrom$PCAwindowID, min)
+  end <- tapply(this_chrom$end_pos,this_chrom$PCAwindowID, max)
+  ranges <- toGRanges(data.frame(Chrom=chr, start, end))
+  par(mfrow=c(1,1), mar=c(1,4,0.4,0), oma=c(0,0,0,0))
+  kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL)
+  kpPlotRegions(kp.chrom, data=ranges, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+  kpAddBaseNumbers(kp.chrom, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
+  seqlevels(kp.chrom$genome)
+  kpText(kp.chrom, chr=chr, data=ranges, x = (ranges$end-ranges$start)/2,
+         y=c(1.1,1.3), labels = names(start), srt=90, cex=0.4)
+  dev.off()
 }  
 
 
