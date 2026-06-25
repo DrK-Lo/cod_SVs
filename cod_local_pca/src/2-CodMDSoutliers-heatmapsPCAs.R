@@ -35,6 +35,10 @@ map <- my_snps$map
 pops <- my_snps$fam[-remove,]
 rownames(G) <- pops$family.ID
 colnames(G) <- round(map$physical.pos/1000000,3)
+
+map <- my_snps$map
+pops <- my_snps$fam[-remove,]
+
 rm(my_snps)
 
 # Read in the unique window table
