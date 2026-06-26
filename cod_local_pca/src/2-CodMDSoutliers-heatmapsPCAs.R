@@ -32,6 +32,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   str(G)
   head(G[,1:5])
   map <- my_snps$map
+  print(my_snps$fam[remove,])
   pops <- my_snps$fam[-remove,]
   colnames(G) <- round(map$physical.pos/1000000,3)
   
@@ -76,8 +77,8 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   SVs$invSizeMin[SVs$invSizeMin < 0] <- 0
   
   ## Add color by number of individuals
-  color_endpoints <- c(grey(0.95), "#e2925d")
-  SVs$color <- colByValue(SVs$n_ind_startWindows, colors = c(color_endpoints))
+  color_endpoints <- c(grey(0.95), "#5dade2")
+  SVs$color <- colByValue(SVs$n_ind_invID, colors = c(color_endpoints))
   
   summary(SVs$n_ind_startWindows)
   color_gradient <- t(colorRampPalette(color_endpoints)(100))
@@ -102,11 +103,14 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
  #### plot inversion sizes ####
   pdf("../figures/InvSizeFreq.pdf", width=6, height=5)
   par(mar=c(4,4,1,1), mfrow=c(1,1), oma=c(0,0,0,0))
-  hist(log10(SVs$invSizeMax), col="#e2925d", breaks=(seq(3, 8,by=0.1)), 
+  hist(log10(SVs$invSizeMax), col="#5dade2", breaks=(seq(3, 8,by=0.1)), 
        xlab= "Log10(Inversion size in bases)", main="")
-  hist(log10(windows$end-windows$start), breaks=(seq(3, 8,by=0.1)), add=TRUE, col="#5dade2")
+  hist(log10(windows$end-windows$start), breaks=(seq(3, 8,by=0.1)), add=TRUE, col="#e2925d")
   legend("topright",
-         fill=c("#e2925d", "#5dade2"), legend=c("SV-based", "PCA-based"))
+         fill=c("#5dade2", "#e2925d"), legend=c("SV-based", "PCA-based"))
+  
+  # SVs "#5dade2"
+  # MDS "#e2925d"
   
   par(mar=c(4,4,1,1), mfrow=c(1,1), oma=c(0,0,0,0))
   hist((SVs$invSizeMax)/10^6, col="cornflowerblue", breaks=(seq(0, 43,by=0.1)), 
@@ -165,13 +169,13 @@ for (i in 1:nrow(windows)){
                     #  SVs$window_EndUpperCI > windows$start[i])
                       )
   whichSVs
-  df <- SVs[whichSVs, c("Chrom", "window_StartLowerCI", "window_EndUpperCI")]
+  df <- SVs[whichSVs, c("Chrom", "window_StartLowerCI", "window_EndUpperCI", "color")]
   df$Chrom="."
   localSVs <- toGRanges(df)
   localGenome = toGRanges(data.frame(chr=".", start= windows$start[i], end = windows$end[i]))
  
   kp.plot <- plotKaryotype(genome=localGenome, chromosome=".")
-  kpPlotRegions(kp.plot, data=localSVs, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+  kpPlotRegions(kp.plot, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
   kpAddBaseNumbers(kp.plot, tick.dist=(windows$end[i]-windows$start[i])/5, 
                    tick.len=7.5, add.units=TRUE, units="Mb", cex=1, 
                    minor.tick.dist=(windows$end[i]-windows$start[i])/10)

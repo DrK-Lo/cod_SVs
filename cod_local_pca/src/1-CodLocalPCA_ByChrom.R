@@ -14,6 +14,9 @@ library(bigsnpr)
 library(Matrix)
 library(dplyr)
 library(LEA)
+library(karyoploteR)
+library(BSgenome)
+library(ggplot2)
 
 setwd("~/Documents/GitHub/cod_SVs/cod_local_pca/src")
 
@@ -43,6 +46,8 @@ dim(G)
 str(G)
 head(G[,1:5])
 map <- my_snps$map
+print("Removed")
+print(my_snps$fam[remove,])
 pops <- my_snps$fam[-remove,]
 
 # double check missing data
@@ -73,7 +78,11 @@ head(gadmor3genome)
 # SNPs are in 0, 1, 2 format. My full script for the eLD analysis is on github:
 local_pca_results <- NULL
 maxPCAwindowID <- 0
-dir.create(paste0("../results-MDSbyChrom-", window_size,"windows"))
+window_size = 100
+if(!dir.exists(paste0("../results-MDSbyChrom-", window_size,"windows"))){
+  dir.create(paste0("../results-MDSbyChrom-", window_size,"windows"))
+}
+
 for (chr in chromosomes) {
   #chr = chromosomes[1] #uncomment for testing
   chr_num <- as.numeric(substr(chr,8,9))-47
@@ -226,16 +235,17 @@ for (chr in chromosomes) {
   PCA_outlier2[which(PCA_outlier==FALSE)]=NA
 
   plot(this_chrom$start_MB,rep(1, times=nrow(fit10d$points)),  ylim=c(0.9,1.1), col="grey", ylab="",xaxt="n", yaxt="n", bty="n", pch=19)
-  points(this_chrom$start_MB, PCA_outlier2, lwd=5,  col="red")
+  points(this_chrom$start_MB, PCA_outlier2, lwd=5,  col="#e2925d")
     text(this_chrom$start_MB[!is.na(this_chrom$PCAwindowID_plot)], y=rep(c(1.05, 1.08), times=nrow(fit10d$points)/2), 
          labels = this_chrom$PCAwindowID_plot[!is.na(this_chrom$PCAwindowID_plot)], cex=0.5, srt=90)
  
+  
     
-  plot(this_chrom$start_MB, fit10d$points[,1], xlab="Position", ylab="MDS1", col=outlier_MDS1+1, pch=outlier_MDS1+20, xaxt="n", bty="l", las=1, cex=1.5)  
-  plot(this_chrom$start_MB, fit10d$points[,2], xlab="Position", ylab="MDS2", col=outlier_MDS2+1, pch=outlier_MDS2+20, xaxt="n", bty="l", las=1, cex=1.5) 
-  plot(this_chrom$start_MB, fit10d$points[,3], xlab="Position", ylab="MDS3", col=outlier_MDS3+1, pch=outlier_MDS3+20, xaxt="n", bty="l", las=1, cex=1.5) 
-  plot(this_chrom$start_MB, fit10d$points[,4], xlab="Position", ylab="MDS4", col=outlier_MDS4+1, pch=outlier_MDS4+20, xaxt="n", bty="l", las=1, cex=1.5)
-  plot(this_chrom$start_MB, fit10d$points[,5], ylab="MDS5", col=outlier_MDS5+1, pch=outlier_MDS5+20,  bty="l", las=1, cex=1.5, xlab="Position (MB)")
+  plot(this_chrom$start_MB, fit10d$points[,1], xlab="Position", ylab="MDS1", col=ifelse(outlier_MDS1, "#e2925d", "grey"), pch=outlier_MDS1+20, xaxt="n", bty="l", las=1, cex=1.5)  
+  plot(this_chrom$start_MB, fit10d$points[,2], xlab="Position", ylab="MDS2", col=ifelse(outlier_MDS2,  "#e2925d", "grey"), pch=outlier_MDS2+20, xaxt="n", bty="l", las=1, cex=1.5) 
+  plot(this_chrom$start_MB, fit10d$points[,3], xlab="Position", ylab="MDS3", col=ifelse(outlier_MDS3,  "#e2925d", "grey"), pch=outlier_MDS3+20, xaxt="n", bty="l", las=1, cex=1.5) 
+  plot(this_chrom$start_MB, fit10d$points[,4], xlab="Position", ylab="MDS4", col=ifelse(outlier_MDS4,  "#e2925d", "grey"), pch=outlier_MDS4+20, xaxt="n", bty="l", las=1, cex=1.5)
+  plot(this_chrom$start_MB, fit10d$points[,5], ylab="MDS5", col=ifelse(outlier_MDS5,  "#e2925d", "grey"), pch=outlier_MDS5+20,  bty="l", las=1, cex=1.5, xlab="Position (MB)")
   mtext(paste0("Chromosome ", chr_num," (" ,chr, ")"), side=3, outer=TRUE, adj=0.1)
   mtext("Position (MB)", side=1, outer=TRUE, line=2)
 
@@ -248,7 +258,7 @@ for (chr in chromosomes) {
   ranges <- toGRanges(data.frame(Chrom=chr, start, end))
   par(mfrow=c(1,1), mar=c(1,4,0.4,0), oma=c(0,0,0,0))
   kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL)
-  kpPlotRegions(kp.chrom, data=ranges, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+  kpPlotRegions(kp.chrom, data=ranges, col="#e2925d", border=darker("#e2925d"), r0=0, r1=1)
   kpAddBaseNumbers(kp.chrom, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
   seqlevels(kp.chrom$genome)
   kpText(kp.chrom, chr=chr, data=ranges, x = (ranges$end-ranges$start)/2,
