@@ -8,9 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-setwd("/projects/lotterhos/2020_CodGenomes_Inversions")
 library(dplyr)
 library(tidyverse)
+setwd("~/Undergrad/NortheasternUniversity/Research/cod_SVs")
+
 ```
 
 ##Establish Necessary Functions
@@ -131,14 +132,13 @@ collapseWindow <- function(lowerCI,upperCI,
 # Run Collapse Windows
 
 ```{r read in data}
-INV_dataset <- read.csv("/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.csv")
+INV_dataset <- read.csv("~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset.csv")
+INV_dataset$X <- NULL
 INV_pca <-INV_dataset[INV_dataset$PROGRAM=="PCA", ]
 INV.dataset <- INV_dataset[INV_dataset$PROGRAM!="PCA", ]
 INV.dataset <- INV.dataset[INV.dataset$CHROM=="NC_044048.1"|INV.dataset$CHROM=="NC_044049.1"| INV.dataset$CHROM=="NC_044050.1"|INV.dataset$CHROM=="NC_044051.1"|INV.dataset$CHROM=="NC_044052.1"| INV.dataset$CHROM=="NC_044053.1"|INV.dataset$CHROM=="NC_044054.1"|INV.dataset$CHROM=="NC_044055.1"| INV.dataset$CHROM=="NC_044056.1"|INV.dataset$CHROM=="NC_044057.1"|INV.dataset$CHROM=="NC_044058.1"| INV.dataset$CHROM=="NC_044059.1"|INV.dataset$CHROM=="NC_044060.1"|INV.dataset$CHROM=="NC_044061.1"|  INV.dataset$CHROM=="NC_044062.1"|INV.dataset$CHROM=="NC_044063.1"|INV.dataset$CHROM=="NC_044064.1"| INV.dataset$CHROM=="NC_044065.1"|INV.dataset$CHROM=="NC_044066.1"|INV.dataset$CHROM=="NC_044067.1"| INV.dataset$CHROM=="NC_044068.1"|INV.dataset$CHROM=="NC_044069.1"|INV.dataset$CHROM=="NC_044070.1",] 
-INV.dataset$X <- NULL
 colnames(INV.dataset) <- c("Individual", "Chrom", "ID", "StartBreakpoint", "StartBreakpoint_UpperCI", "StartBreakpoint_LowerCI", "EndBreakpoint", "EndBreakpoint_UpperCI", "EndBreakpoint_LowerCI", "SVLen", "Qual", "Filter", "GT", "GT_Qual", "GT_Filter", "SVType", "Program", "Strand")
 INV.dataset <- INV.dataset[order(INV.dataset$StartBreakpoint_LowerCI, INV.dataset$EndBreakpoint_LowerCI),]
-
 
 #append 5000bp confidence intervals
   ##5000bp selected as a conservative distance based on the looking at the dataset
@@ -159,15 +159,15 @@ for(i in 1:nrow(INV.dataset)){
     INV.dataset$EndBreakpoint_NewLowerCI[i] <- INV.dataset$EndBreakpoint_UpperCI[i] - 5000
     }
 }
-INV.dataset$StartBreakpoint_NewLowerCI[INV.dataset$StartBreakpoint_NewLowerCI<0] <-0 #Make sure any negative values are 0
+INV.dataset$StartBreakpoint_NewLowerCI[INV.dataset$StartBreakpoint_NewLowerCI<0]=0 #Make sure any negative values are 0
 
 #create merge key (anything text)
 INV.dataset$MergeKey <- paste(INV.dataset$Individual, INV.dataset$ID, seq(from=1, to=nrow(INV.dataset), by=1), sep="_")
 
 #sanity check - all UpperCI < LowerCI
-##Since True=1, sum of the values should be equal to the number of rows in the dataset
-sum((INV.dataset$StartBreakpoint_NewUpperCI >= INV.dataset$StartBreakpoint_NewLowerCI)) #PASSED
-sum((INV.dataset$EndBreakpoint_NewUpperCI >= INV.dataset$EndBreakpoint_NewLowerCI)) #PASSED
+##Sum of the values should be equal to the number of rows in the dataset
+sum((INV.dataset$StartBreakpoint_NewUpperCI >= INV.dataset$StartBreakpoint_NewLowerCI))==nrow(INV.dataset) #PASSED
+sum((INV.dataset$EndBreakpoint_NewUpperCI >= INV.dataset$EndBreakpoint_NewLowerCI))==nrow(INV.dataset) #PASSED
 
 ```
 
@@ -202,14 +202,14 @@ if (nrow(startWindows_ind) != nrow(endWindows_ind)){
 ##Interpret
 
 ```{r assess support}
-#how many individuals support the windows
+#how many individuals support each window
 n_ind_startWindows <- rowSums(table(startWindows_ind$windowID, startWindows_ind$Individual)>0)
 startWindowsNew <- left_join(startWindows, data.frame(n_ind_startWindows, windowID=names(n_ind_startWindows)), by="windowID")
 
 n_ind_endWindows <- rowSums(table(endWindows_ind$windowID, endWindows_ind$Individual)>0)
 endWindowsNew <- left_join(endWindows, data.frame(n_ind_endWindows, windowID=names(n_ind_endWindows)), by="windowID")
 
-#how many methods support the window?
+#how many methods support each window?
 n_method_startWindows <- rowSums(table(startWindows_ind$windowID, startWindows_ind$Program)>0)
 startWindowsNew <- left_join(startWindowsNew, data.frame(n_method_startWindows, windowID=names(n_method_startWindows)), by="windowID") #ADJUSTMENT TO KATIE'S CODE ->  adding methods to startWindowsNew rather than creating new object
 
@@ -256,47 +256,28 @@ if(nrow(INV.dataset_merged) != nrow(INV.dataset_start) && nrow(INV.dataset_end))
 ## based on minimum criteria
 INV.dataset_merged$InversionID <- paste(INV.dataset_merged$windowID_StartBreakpoint, INV.dataset_merged$windowID_EndBreakpoint, sep="-")
 
+##How many individuals support each inversion id  
+n_ind_invID <- rowSums(table(INV.dataset_merged$InversionID, INV.dataset_merged$Individual)>0)
+n_ind_invID <- data.frame(n_ind_invID, InversionID=names(n_ind_invID))
+INV.dataset_merged <- left_join(n_ind_invID, INV.dataset_merged, by="InversionID")
+
 ## per inversion id
-### minimum number of individuals supporting the call
+### minimum number of individuals required to support the call
 n_ind_min <- 15 
-### number of methods supporting the call
+### number of methods required to support the call
 n_methods_min <- 3
 ### gt != 0/0 and "PASS" quality filter within the inversion
-#InversionID <- unique(INV.dataset_merged$InversionID)
 INV.dataset_merged$'Filter-GT_Pass'=FALSE
 INV.dataset_merged$'Filter-GT_Pass'[INV.dataset_merged$Filter=="PASS"]=TRUE
   summary(INV.dataset_merged$'Filter-GT_Pass')
 INV.dataset_merged$'Filter-GT_Pass'[INV.dataset_merged$GT=="0/0"]=FALSE
   summary(INV.dataset_merged$'Filter-GT_Pass')
 
-# for (i in 1:length(InversionID)) {
-#   data.temp <- INV.dataset_merged[INV.dataset_merged$InversionID==InversionID[i], ]
-#   for (j in 1:nrow(data.temp)) {
-#     if(data.temp$GT[j]=="0/0"|is.na(data.temp$GT[j])){
-#       data.temp$GT_Pass <- FALSE
-#     }else if (data.temp$GT[j]=="0/1"|data.temp$GT[j]=="1/1"){
-#       data.temp$GT_Pass <- TRUE
-#       break
-#     }
-#   }
-#   for (k in 1:nrow(data.temp)) {
-#     if(data.temp$Filter[k]=="PASS"){
-#       data.temp$Filter_Pass <- TRUE
-#       break
-#     }else{
-#       data.temp$Filter_Pass <- FALSE
-#     }
-#   }
-#   INV_gt.qual_pass <- rbind(INV_gt.qual_pass, data.temp)
-# }
-
 # pass
-#INV.dataset_merged <- left_join(INV.dataset_merged, INV_gt.qual_pass)
-INV.dataset_merged$PassInv <- (INV.dataset_merged$'Filter-GT_Pass'==TRUE &
-                          INV.dataset_merged$n_ind_startWindows >= n_ind_min & 
-                          INV.dataset_merged$n_ind_endWindows >= n_ind_min &
+INV.dataset_merged$PassInv <- (INV.dataset_merged$n_ind_invID >= n_ind_min & 
                           INV.dataset_merged$n_method_startWindows >= n_methods_min &
-                          INV.dataset_merged$n_method_endWindows >= n_methods_min)
+                          INV.dataset_merged$n_method_endWindows >= n_methods_min &
+                          INV.dataset_merged$'Filter-GT_Pass'==TRUE)
 summary(INV.dataset_merged$PassInv)
 
 ```
@@ -308,13 +289,13 @@ summary(INV.dataset_merged$PassInv)
 INV.dataset_filtered <- INV.dataset_merged[INV.dataset_merged$PassInv,]
 INV.dataset_analyze <- select(INV.dataset_filtered, InversionID, Individual, Chrom,
                   windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
-                  SVType, GT, GT_Qual, GT_Filter, Strand, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows) # Full dataset of inversion and information; NOTE will need to do some manual adjustments to combine the GT, Strand, and Inversion information
+                  SVType, GT, GT_Qual, GT_Filter, Strand, n_ind_startWindows, n_ind_endWindows, n_ind_invID, n_method_startWindows, n_method_endWindows) # Full dataset of inversion and information; NOTE will need to do some manual adjustments to combine the GT, Strand, and Inversion information
 
 # filter the last dataframe to individual inversions
 # this is the dataset to analyze for inversion size distribution
 INV.dataset_analyze_final = select(INV.dataset_analyze, InversionID, Chrom,
                   windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
-                  SVType, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows)
+                  SVType, n_ind_startWindows, n_ind_endWindows, n_ind_invID, n_method_startWindows, n_method_endWindows)
 INV.dataset_analyze_final = filter(INV.dataset_analyze_final,!duplicated(INV.dataset_analyze_final))
 ```
 
@@ -335,11 +316,11 @@ INV.dataset_analyze_final$invSizeMin <-  INV.dataset_analyze_final$window_EndLow
 ##Save to csv
 
 ```{r}
-write.csv(INV.dataset_analyze, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_filtered.csv") #Output the entire inversion dataset (including individual)  to .csv for further use
+write.csv(INV.dataset_analyze, "~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset_ConsolidationMethod1.5_filtered.csv") #Output the entire inversion dataset (including individual)  to .csv for further use
 
-write.csv(INV.dataset_analyze_final, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Output the unique inversion dataset to .csv for further use
+write.csv(INV.dataset_analyze_final, "~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Output the unique inversion dataset to .csv for further use
 
 # save pca inversion dataset as its own csv
-write.csv(INV_pca, "/projects/lotterhos/2020_CodGenomes_Inversions/PCA.csv")
+write.csv(INV_pca, "~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/PCA.csv")
 
 ```

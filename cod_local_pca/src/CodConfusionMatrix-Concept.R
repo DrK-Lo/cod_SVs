@@ -81,4 +81,9 @@ if (PCA_genotype > 0) and (SV_present == TRUE){
   return(IsItAMatch) 
 }
 
+#####
 
+#Lei Code
+Size_Pass <- SV_start <= PCA_size+(PCA_size*0.5) & SV_start <= PCA_size+(PCA_size*0.5)
+Location_Pass <- abs((SV_start-SV_end)/(pmin(SV_start,PCA_start)-pmax(SV_end,PCA_end)))>=0.7
+ID_PASS <- Size_Pass=="TRUE" & Location_Pass=="TRUE"

@@ -10,12 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 
-INV <- read.csv("/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
+INV <- read.csv("~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
   chrom1 <- INV[INV$Chrom == "NC_044048.1",]
   chrom2 <- INV[INV$Chrom == "NC_044049.1",]
   chrom7 <- INV[INV$Chrom == "NC_044054.1",]
   chrom12 <- INV[INV$Chrom == "NC_044059.1",]
-PCA <- read.csv("/projects/lotterhos/2020_CodGenomes_Inversions/PCA.csv") #PCA dataset
+PCA <- read.csv("~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/PCA.csv") #PCA dataset
   for(i in 1:NROW(PCA)){
      if(substr(PCA$ID[i],1,3) == "GoM"){
      PCA$ECOTYPE[i] <- "Gulf-of-Maine"
@@ -47,21 +47,22 @@ chrom12.PCA <- PCA[PCA$CHROM=="NC_044059.1",  c("CHROM", "INDIV_ECOTYPE", "GT", 
 
 ```{r}
 ##Inversion sizes within 10% of those previously reported
-pca.size <- c((28292263-11299038)*0.1, (4466546-481246)*0.1, (26336501-16828712)*0.1, (13690550-1809214)*0.1) #calculate size based on start and end locations then multiply by 10%
+pca.size <- c((28292263-11299038), (4466546-481246), (26336501-16828712), (13690550-1809214)) #calculate size based on start and end locations
+lostruct.size <- c((28828695-11064526), (4475015-436764), (26854568-16120084), (17892869-290637)) #calculate size based on start and end locations
 
 ###Chrom1
-chrom1$Size_Pass <- (chrom1$invSizeMax <= (16993225+pca.size[1]) & chrom1$invSizeMax >= (16993225-pca.size[1]))
+chrom1$Size_Pass <- ((chrom1$invSizeMax)/pca.size[1]) >=0.5 & ((chrom1$invSizeMax)/pca.size[1])<=1.5 | ((chrom1$invSizeMax)/lostruct.size[1]) >=0.5 & ((chrom1$invSizeMax)/lostruct.size[1])<=1.5
     print(chrom1[chrom1$Size_Pass=="TRUE", "InversionID"]) #IDs of consensus inversions that align with the size criteria
 ###Chrom2
-chrom2$Size_Pass <- (chrom2$invSizeMax <= (3985300+pca.size[2]) & chrom2$invSizeMax >= (3985300-pca.size[2]))
+chrom2$Size_Pass <- ((chrom2$invSizeMax)/pca.size[2]) >=0.5 & ((chrom2$invSizeMax)/pca.size[2])<=1.5 | ((chrom2$invSizeMax)/lostruct.size[2]) >=0.5 & ((chrom2$invSizeMax)/lostruct.size[2])<=1.5
     print(chrom2[chrom2$Size_Pass=="TRUE", "InversionID"]) #IDs of consensus inversions that align with the size criteria
 ###Chrom7
-chrom7$Size_Pass <- (chrom7$invSizeMax <= (9507789+pca.size[3]) & chrom7$invSizeMax >= (9507789-pca.size[3]))
+chrom7$Size_Pass <- ((chrom7$invSizeMax)/pca.size[3]) >=0.5 & ((chrom7$invSizeMax)/pca.size[3])<=1.5 | ((chrom7$invSizeMax)/lostruct.size[3]) >=0.5 & ((chrom7$invSizeMax)/lostruct.size[3])<=1.5
     print(chrom7[chrom7$Size_Pass=="TRUE", "InversionID"])
 ###Chrom12
-chrom12$Size_Pass <- (chrom12$invSizeMax <= (11881336+pca.size[4]) & chrom12$invSizeMax >= (11881336-pca.size[4]))
+chrom12$Size_Pass <- ((chrom12$invSizeMax)/pca.size[4]) >=0.5 & ((chrom12$invSizeMax)/pca.size[4])<=1.5 | ((chrom12$invSizeMax)/lostruct.size[4]) >=0.5 & ((chrom12$invSizeMax)/lostruct.size[4])<=1.5
     print(chrom12[chrom12$Size_Pass=="TRUE", "InversionID"])  
-
+    
     
     
     ###Chrom1 Partial INVs
@@ -73,7 +74,7 @@ chrom12$Size_Pass <- (chrom12$invSizeMax <= (11881336+pca.size[4]) & chrom12$inv
 
 ```
 
-NOTE addition of Barney et al sizes did not change anything about the inversion IDs that passed on the basis of size
+
 
 ```{r}
 ##Inversion locations overlap by >70%

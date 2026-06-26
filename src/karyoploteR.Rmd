@@ -2,11 +2,13 @@
 title: "karyoploteR"
 output: html_document
 date: "2026-05-21"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("~/Undergrad/NortheasternUniversity/Research")
+setwd("~/Undergrad/NortheasternUniversity/Research/cod_SVs")
 
 library(ggplot2)
 library(tidyverse)
@@ -14,11 +16,9 @@ library(karyoploteR)
 library(BSgenome)
 library(dbplyr)
 
-INV <- read.csv("INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
+INV <- read.csv("outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
 INV$X=NULL
 INV <- INV[order(INV$Chrom, INV$window_StartLowerCI, INV$window_EndUpperCI),]
-
-INV_full <- read.csv("INV-dataset_ConsolidationMethod1.5_filtered.csv")
 
 
 ```
@@ -29,142 +29,147 @@ INV_full <- read.csv("INV-dataset_ConsolidationMethod1.5_filtered.csv")
 #Create custom genome
 gadmor3genome <- toGRanges(data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1"), start=c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), end=c(30875876, 28732775, 30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694, 34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006)))
 
+plotparams <- getDefaultPlotParams(plot.type=1)
+plotparams$ideogramheight=25
+
+INV$color <- colByValue(INV$n_ind_invID, colors = c(grey(0.95), "#5dade2"))
+
 #Chr1 Plot
 chrom1 <- toGRanges(INV[INV$Chrom=="NC_044048.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom1 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044048.1")
-kpPlotRegions(kp.chrom1, data=chrom1, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom1 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044048.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom1, data=chrom1, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom1, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr2 Plot
 chrom2 <- toGRanges(INV[INV$Chrom=="NC_044049.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom2 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044049.1")
-kpPlotRegions(kp.chrom2, data=chrom2, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom2 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044049.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom2, data=chrom2, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom2, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr3 Plot
 chrom3 <- toGRanges(INV[INV$Chrom=="NC_044050.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom3 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044050.1")
-kpPlotRegions(kp.chrom3, data=chrom3, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom3 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044050.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom3, data=chrom3, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom3, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr4 Plot
 chrom4 <- toGRanges(INV[INV$Chrom=="NC_044051.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom4 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044051.1")
-kpPlotRegions(kp.chrom4, data=chrom4, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom4 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044051.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom4, data=chrom4, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom4, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr5 Plot
 chrom5 <- toGRanges(INV[INV$Chrom=="NC_044052.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom5 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044052.1")
-kpPlotRegions(kp.chrom5, data=chrom5, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom5 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044052.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom5, data=chrom5, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom5, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr6 Plot
 chrom6 <- toGRanges(INV[INV$Chrom=="NC_044053.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom6 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044053.1")
-kpPlotRegions(kp.chrom6, data=chrom6, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom6 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044053.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom6, data=chrom6, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom6, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr7 Plot
 chrom7 <- toGRanges(INV[INV$Chrom=="NC_044054.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom7 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044054.1")
-kpPlotRegions(kp.chrom7, data=chrom7, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom7 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044054.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom7, data=chrom7, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom7, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr8 Plot
 chrom8 <- toGRanges(INV[INV$Chrom=="NC_044055.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom8 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044055.1")
-kpPlotRegions(kp.chrom8, data=chrom8, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom8 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044055.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom8, data=chrom8, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom8, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr9 Plot
 chrom9 <- toGRanges(INV[INV$Chrom=="NC_044056.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom9 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044056.1")
-kpPlotRegions(kp.chrom9, data=chrom9, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom9 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044056.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom9, data=chrom9, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom9, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr10 Plot
 chrom10 <- toGRanges(INV[INV$Chrom=="NC_044057.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom10 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044057.1")
-kpPlotRegions(kp.chrom10, data=chrom10, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom10 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044057.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom10, data=chrom10, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom10, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr 11 Plot
 chrom11 <- toGRanges(INV[INV$Chrom=="NC_044058.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom11 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044058.1")
-kpPlotRegions(kp.chrom11, data=chrom11, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom11 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044058.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom11, data=chrom11, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom11, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr12 Plot
 chrom12 <- toGRanges(INV[INV$Chrom=="NC_044059.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom12 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044059.1")
-kpPlotRegions(kp.chrom12, data=chrom12, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom12 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044059.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom12, data=chrom12, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom12, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr13 Plot
 chrom13 <- toGRanges(INV[INV$Chrom=="NC_044060.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom13 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044060.1")
-kpPlotRegions(kp.chrom13, data=chrom13, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom13 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044060.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom13, data=chrom13, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom13, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr14 Plot
 chrom14 <- toGRanges(INV[INV$Chrom=="NC_044061.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom14 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044061.1")
-kpPlotRegions(kp.chrom14, data=chrom14, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom14 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044061.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom14, data=chrom14, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom14, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr15 Plot
 chrom15 <- toGRanges(INV[INV$Chrom=="NC_044062.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom15 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044062.1")
-kpPlotRegions(kp.chrom15, data=chrom15, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom15 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044062.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom15, data=chrom15, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom15, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr16 Plot
 chrom16 <- toGRanges(INV[INV$Chrom=="NC_044063.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom16 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044063.1")
-kpPlotRegions(kp.chrom16, data=chrom16, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom16 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044063.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom16, data=chrom16, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom16, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr17 Plot
 chrom17 <- toGRanges(INV[INV$Chrom=="NC_044064.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom17 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044064.1")
-kpPlotRegions(kp.chrom17, data=chrom17, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom17 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044064.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom17, data=chrom17, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom17, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr18 Plot
 chrom18 <- toGRanges(INV[INV$Chrom=="NC_044065.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom18 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044065.1")
-kpPlotRegions(kp.chrom18, data=chrom18, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom18 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044065.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom18, data=chrom18, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom18, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr19 Plot
 chrom19 <- toGRanges(INV[INV$Chrom=="NC_044066.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom19 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044066.1")
-kpPlotRegions(kp.chrom19, data=chrom19, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom19 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044066.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom19, data=chrom19, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom19, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr20 Plot
 chrom20 <- toGRanges(INV[INV$Chrom=="NC_044067.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom20 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044067.1")
-kpPlotRegions(kp.chrom20, data=chrom20, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom20 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044067.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom20, data=chrom20, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom20, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr21 Plot
 chrom21 <- toGRanges(INV[INV$Chrom=="NC_044068.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom21 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044068.1")
-kpPlotRegions(kp.chrom21, data=chrom21, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom21 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044068.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom21, data=chrom21, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom21, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr22 Plot
 chrom22 <- toGRanges(INV[INV$Chrom=="NC_044069.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom22 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044069.1")
-kpPlotRegions(kp.chrom22, data=chrom22, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom22 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044069.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom22, data=chrom22, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom22, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 #Chr23 Plot
 chrom23 <- toGRanges(INV[INV$Chrom=="NC_044070.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom23 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044070.1")
-kpPlotRegions(kp.chrom23, data=chrom23, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
+kp.chrom23 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044070.1", plot.params=plotparams, labels.plotter=NULL)
+kpPlotRegions(kp.chrom23, data=chrom23, col=INV$color, border=darker(INV$color), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom23, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
 ```
