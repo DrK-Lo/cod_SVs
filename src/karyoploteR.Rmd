@@ -2,6 +2,8 @@
 title: "karyoploteR"
 output: html_document
 date: "2026-05-21"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -14,11 +16,12 @@ library(karyoploteR)
 library(BSgenome)
 library(dbplyr)
 
-INV <- read.csv("INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
+INV <- read.csv("outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
 INV$X=NULL
 INV <- INV[order(INV$Chrom, INV$window_StartLowerCI, INV$window_EndUpperCI),]
 
-INV_full <- read.csv("INV-dataset_ConsolidationMethod1.5_filtered.csv")
+INV_full <- read.csv("outputs/INV-dataset_ConsolidationMethod1.5_filtered.csv")
+n_ind_invID <- rowSums(table(INV_full$InversionID, INV_full$Individual)>0)
 
 
 ```
@@ -29,9 +32,15 @@ INV_full <- read.csv("INV-dataset_ConsolidationMethod1.5_filtered.csv")
 #Create custom genome
 gadmor3genome <- toGRanges(data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1"), start=c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), end=c(30875876, 28732775, 30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694, 34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006)))
 
+plotparams <- getDefaultPlotParams(plot.type=1)
+plotparams$ideogramheight=25
+
+color_endpoints <- c(grey(0.95), "#5dade2")  
+SVs$color <- colByValue(SVs$n_ind_startWindows, colors = c(color_endpoints))
+
 #Chr1 Plot
 chrom1 <- toGRanges(INV[INV$Chrom=="NC_044048.1", c("Chrom", "window_StartLowerCI", "window_EndUpperCI")])
-kp.chrom1 <- plotKaryotype(plot.type=3, genome=gadmor3genome, chromosome="NC_044048.1")
+kp.chrom1 <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome="NC_044048.1", plot.params=plotparams, labels.plotter=NULL)
 kpPlotRegions(kp.chrom1, data=chrom1, col="#5dade2", border=darker("#5dade2"), r0=0, r1=1)
 kpAddBaseNumbers(kp.chrom1, tick.dist=10000000, tick.len=7.5, add.units=TRUE, units="Mb", minor.tick.dist=5000000, minor.tick.len=5, cex=1)
 
