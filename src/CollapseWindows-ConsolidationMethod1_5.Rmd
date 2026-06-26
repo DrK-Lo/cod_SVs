@@ -289,13 +289,13 @@ summary(INV.dataset_merged$PassInv)
 INV.dataset_filtered <- INV.dataset_merged[INV.dataset_merged$PassInv,]
 INV.dataset_analyze <- select(INV.dataset_filtered, InversionID, Individual, Chrom,
                   windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
-                  SVType, GT, GT_Qual, GT_Filter, Strand, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows) # Full dataset of inversion and information; NOTE will need to do some manual adjustments to combine the GT, Strand, and Inversion information
+                  SVType, GT, GT_Qual, GT_Filter, Strand, n_ind_startWindows, n_ind_endWindows, n_ind_invID, n_method_startWindows, n_method_endWindows) # Full dataset of inversion and information; NOTE will need to do some manual adjustments to combine the GT, Strand, and Inversion information
 
 # filter the last dataframe to individual inversions
 # this is the dataset to analyze for inversion size distribution
 INV.dataset_analyze_final = select(INV.dataset_analyze, InversionID, Chrom,
                   windowID_StartBreakpoint, window_StartLowerCI, window_StartUpperCI, windowID_EndBreakpoint, window_EndLowerCI, window_EndUpperCI, 
-                  SVType, n_ind_startWindows, n_ind_endWindows, n_method_startWindows, n_method_endWindows)
+                  SVType, n_ind_startWindows, n_ind_endWindows, n_ind_invID, n_method_startWindows, n_method_endWindows)
 INV.dataset_analyze_final = filter(INV.dataset_analyze_final,!duplicated(INV.dataset_analyze_final))
 ```
 
@@ -321,6 +321,6 @@ write.csv(INV.dataset_analyze, "~/Undergrad/NortheasternUniversity/Research/cod_
 write.csv(INV.dataset_analyze_final, "~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Output the unique inversion dataset to .csv for further use
 
 # save pca inversion dataset as its own csv
-write.csv(INV_pca, "/projects/lotterhos/2020_CodGenomes_Inversions/PCA.csv")
+write.csv(INV_pca, "~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/PCA.csv")
 
 ```
