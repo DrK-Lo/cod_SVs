@@ -1,0 +1,286 @@
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##fileDate=20250922
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=BND,Description="Translocation">
+##ALT=<ID=INS,Description="Insertion">
+##FILTER=<ID=LowQual,Description="Poor quality and insufficient number of PEs and SRs.">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="PE confidence interval around END">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="PE confidence interval around POS">
+##INFO=<ID=CHR2,Number=1,Type=String,Description="Chromosome for POS2 coordinate in case of an inter-chromosomal translocation">
+##INFO=<ID=POS2,Number=1,Type=Integer,Description="Genomic position for CHR2 in case of an inter-chromosomal translocation">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the structural variant">
+##INFO=<ID=PE,Number=1,Type=Integer,Description="Paired-end support of the structural variant">
+##INFO=<ID=MAPQ,Number=1,Type=Integer,Description="Median mapping quality of paired-ends">
+##INFO=<ID=SRMAPQ,Number=1,Type=Integer,Description="Median mapping quality of split-reads">
+##INFO=<ID=SR,Number=1,Type=Integer,Description="Split-read support">
+##INFO=<ID=SRQ,Number=1,Type=Float,Description="Split-read consensus alignment quality">
+##INFO=<ID=CONSENSUS,Number=1,Type=String,Description="Split-read consensus sequence">
+##INFO=<ID=CONSBP,Number=1,Type=Integer,Description="Consensus SV breakpoint position">
+##INFO=<ID=CE,Number=1,Type=Float,Description="Consensus sequence entropy">
+##INFO=<ID=CT,Number=1,Type=String,Description="Paired-end signature induced connection type">
+##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Insertion length for SVTYPE=INS.">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=PRECISE,Number=0,Type=Flag,Description="Precise structural variation">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVMETHOD,Number=1,Type=String,Description="Type of approach used to detect SV">
+##INFO=<ID=INSLEN,Number=1,Type=Integer,Description="Predicted length of the insertion">
+##INFO=<ID=HOMLEN,Number=1,Type=Integer,Description="Predicted microhomology length using a max. edit distance of 2">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GL,Number=G,Type=Float,Description="Log10-scaled genotype likelihoods for RR,RA,AA genotypes">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=FT,Number=1,Type=String,Description="Per-sample genotype filter">
+##FORMAT=<ID=RC,Number=1,Type=Integer,Description="Raw high-quality read counts or base counts for the SV">
+##FORMAT=<ID=RCL,Number=1,Type=Integer,Description="Raw high-quality read counts or base counts for the left control region">
+##FORMAT=<ID=RCR,Number=1,Type=Integer,Description="Raw high-quality read counts or base counts for the right control region">
+##FORMAT=<ID=RDCN,Number=1,Type=Integer,Description="Read-depth based copy-number estimate for autosomal sites">
+##FORMAT=<ID=DR,Number=1,Type=Integer,Description="# high-quality reference pairs">
+##FORMAT=<ID=DV,Number=1,Type=Integer,Description="# high-quality variant pairs">
+##FORMAT=<ID=RR,Number=1,Type=Integer,Description="# high-quality reference junction reads">
+##FORMAT=<ID=RV,Number=1,Type=Integer,Description="# high-quality variant junction reads">
+##reference=GCF_902167405.1_gadMor3.0_genomic.fna
+##contig=<ID=NC_044048.1,length=30875876>
+##contig=<ID=NC_044049.1,length=28732775>
+##contig=<ID=NC_044050.1,length=30954429>
+##contig=<ID=NC_044051.1,length=43798135>
+##contig=<ID=NC_044052.1,length=25300426>
+##contig=<ID=NC_044053.1,length=27762770>
+##contig=<ID=NC_044054.1,length=34137969>
+##contig=<ID=NC_044055.1,length=29710654>
+##contig=<ID=NC_044056.1,length=26487948>
+##contig=<ID=NC_044057.1,length=27234273>
+##contig=<ID=NC_044058.1,length=30713045>
+##contig=<ID=NC_044059.1,length=30948897>
+##contig=<ID=NC_044060.1,length=28829685>
+##contig=<ID=NC_044061.1,length=29586942>
+##contig=<ID=NC_044062.1,length=28657694>
+##contig=<ID=NC_044063.1,length=34794352>
+##contig=<ID=NC_044064.1,length=21723002>
+##contig=<ID=NC_044065.1,length=24902675>
+##contig=<ID=NC_044066.1,length=22015597>
+##contig=<ID=NC_044067.1,length=24843429>
+##contig=<ID=NC_044068.1,length=22358821>
+##contig=<ID=NC_044069.1,length=23744039>
+##contig=<ID=NC_044070.1,length=25242006>
+##contig=<ID=NW_021963949.1,length=52410>
+##contig=<ID=NW_021963950.1,length=268138>
+##contig=<ID=NW_021963951.1,length=257947>
+##contig=<ID=NW_021963952.1,length=250758>
+##contig=<ID=NW_021963953.1,length=237370>
+##contig=<ID=NW_021963954.1,length=225589>
+##contig=<ID=NW_021963955.1,length=121929>
+##contig=<ID=NW_021963956.1,length=211669>
+##contig=<ID=NW_021963957.1,length=205811>
+##contig=<ID=NW_021963958.1,length=202606>
+##contig=<ID=NW_021963959.1,length=199588>
+##contig=<ID=NW_021963960.1,length=168885>
+##contig=<ID=NW_021963961.1,length=165737>
+##contig=<ID=NW_021963962.1,length=146019>
+##contig=<ID=NW_021963963.1,length=68669>
+##contig=<ID=NW_021963964.1,length=121734>
+##contig=<ID=NW_021963965.1,length=121436>
+##contig=<ID=NW_021963966.1,length=113580>
+##contig=<ID=NW_021963967.1,length=107057>
+##contig=<ID=NW_021963968.1,length=106993>
+##contig=<ID=NW_021963969.1,length=99733>
+##contig=<ID=NW_021963970.1,length=98255>
+##contig=<ID=NW_021963971.1,length=97898>
+##contig=<ID=NW_021963972.1,length=97315>
+##contig=<ID=NW_021963973.1,length=95491>
+##contig=<ID=NW_021963974.1,length=95151>
+##contig=<ID=NW_021963975.1,length=94970>
+##contig=<ID=NW_021963976.1,length=92817>
+##contig=<ID=NW_021963977.1,length=92548>
+##contig=<ID=NW_021963978.1,length=91335>
+##contig=<ID=NW_021963979.1,length=91308>
+##contig=<ID=NW_021963980.1,length=91294>
+##contig=<ID=NW_021963981.1,length=90228>
+##contig=<ID=NW_021963982.1,length=85589>
+##contig=<ID=NW_021963983.1,length=85312>
+##contig=<ID=NW_021963984.1,length=80952>
+##contig=<ID=NW_021963985.1,length=79004>
+##contig=<ID=NW_021963986.1,length=76243>
+##contig=<ID=NW_021963987.1,length=75613>
+##contig=<ID=NW_021963988.1,length=75221>
+##contig=<ID=NW_021963989.1,length=73139>
+##contig=<ID=NW_021963990.1,length=73228>
+##contig=<ID=NW_021963991.1,length=72389>
+##contig=<ID=NW_021963992.1,length=67621>
+##contig=<ID=NW_021963993.1,length=67566>
+##contig=<ID=NW_021963994.1,length=66608>
+##contig=<ID=NW_021963995.1,length=67004>
+##contig=<ID=NW_021963996.1,length=66246>
+##contig=<ID=NW_021963997.1,length=66242>
+##contig=<ID=NW_021963998.1,length=66266>
+##contig=<ID=NW_021963999.1,length=65709>
+##contig=<ID=NW_021964000.1,length=65593>
+##contig=<ID=NW_021964001.1,length=63655>
+##contig=<ID=NW_021964002.1,length=62194>
+##contig=<ID=NW_021964003.1,length=62492>
+##contig=<ID=NW_021964004.1,length=61772>
+##contig=<ID=NW_021964005.1,length=61167>
+##contig=<ID=NW_021964006.1,length=59157>
+##contig=<ID=NW_021964007.1,length=57916>
+##contig=<ID=NW_021964008.1,length=56752>
+##contig=<ID=NW_021964009.1,length=56659>
+##contig=<ID=NW_021964010.1,length=56655>
+##contig=<ID=NW_021964011.1,length=56348>
+##contig=<ID=NW_021964012.1,length=55936>
+##contig=<ID=NW_021964013.1,length=55839>
+##contig=<ID=NW_021964014.1,length=55716>
+##contig=<ID=NW_021964015.1,length=55418>
+##contig=<ID=NW_021964016.1,length=55608>
+##contig=<ID=NW_021964017.1,length=56131>
+##contig=<ID=NW_021964018.1,length=54688>
+##contig=<ID=NW_021964019.1,length=54236>
+##contig=<ID=NW_021964020.1,length=54306>
+##contig=<ID=NW_021964021.1,length=54207>
+##contig=<ID=NW_021964022.1,length=53925>
+##contig=<ID=NW_021964023.1,length=53626>
+##contig=<ID=NW_021964024.1,length=53534>
+##contig=<ID=NW_021964025.1,length=53555>
+##contig=<ID=NW_021964026.1,length=53052>
+##contig=<ID=NW_021964027.1,length=52910>
+##contig=<ID=NW_021964028.1,length=52856>
+##contig=<ID=NW_021964029.1,length=52416>
+##contig=<ID=NW_021964030.1,length=52087>
+##contig=<ID=NW_021964031.1,length=51790>
+##contig=<ID=NW_021964032.1,length=51641>
+##contig=<ID=NW_021964033.1,length=51574>
+##contig=<ID=NW_021964034.1,length=51656>
+##contig=<ID=NW_021964035.1,length=51623>
+##contig=<ID=NW_021964036.1,length=50307>
+##contig=<ID=NW_021964037.1,length=50021>
+##contig=<ID=NW_021964038.1,length=49817>
+##contig=<ID=NW_021964039.1,length=48194>
+##contig=<ID=NW_021964040.1,length=48004>
+##contig=<ID=NW_021964041.1,length=47762>
+##contig=<ID=NW_021964042.1,length=47707>
+##contig=<ID=NW_021964043.1,length=46945>
+##contig=<ID=NW_021964044.1,length=45559>
+##contig=<ID=NW_021964045.1,length=45874>
+##contig=<ID=NW_021964046.1,length=45371>
+##contig=<ID=NW_021964047.1,length=44898>
+##contig=<ID=NW_021964048.1,length=44762>
+##contig=<ID=NW_021964049.1,length=44737>
+##contig=<ID=NW_021964050.1,length=44732>
+##contig=<ID=NW_021964051.1,length=44435>
+##contig=<ID=NW_021964052.1,length=44327>
+##contig=<ID=NW_021964053.1,length=43572>
+##contig=<ID=NW_021964054.1,length=42602>
+##contig=<ID=NW_021964055.1,length=42371>
+##contig=<ID=NW_021964056.1,length=41971>
+##contig=<ID=NW_021964057.1,length=41869>
+##contig=<ID=NW_021964058.1,length=41656>
+##contig=<ID=NW_021964059.1,length=41358>
+##contig=<ID=NW_021964060.1,length=41149>
+##contig=<ID=NW_021964061.1,length=41140>
+##contig=<ID=NW_021964062.1,length=40042>
+##contig=<ID=NW_021964063.1,length=39895>
+##contig=<ID=NW_021964064.1,length=39544>
+##contig=<ID=NW_021964065.1,length=39391>
+##contig=<ID=NW_021964066.1,length=39318>
+##contig=<ID=NW_021964067.1,length=38722>
+##contig=<ID=NW_021964068.1,length=38912>
+##contig=<ID=NW_021964069.1,length=39277>
+##contig=<ID=NW_021964070.1,length=38588>
+##contig=<ID=NW_021964071.1,length=38387>
+##contig=<ID=NW_021964072.1,length=38632>
+##contig=<ID=NW_021964073.1,length=38167>
+##contig=<ID=NW_021964074.1,length=38147>
+##contig=<ID=NW_021964075.1,length=37941>
+##contig=<ID=NW_021964076.1,length=37995>
+##contig=<ID=NW_021964077.1,length=37612>
+##contig=<ID=NW_021964078.1,length=37033>
+##contig=<ID=NW_021964079.1,length=37025>
+##contig=<ID=NW_021964080.1,length=37002>
+##contig=<ID=NW_021964081.1,length=36742>
+##contig=<ID=NW_021964082.1,length=36899>
+##contig=<ID=NW_021964083.1,length=36120>
+##contig=<ID=NW_021964084.1,length=36268>
+##contig=<ID=NW_021964085.1,length=36173>
+##contig=<ID=NW_021964086.1,length=35831>
+##contig=<ID=NW_021964087.1,length=35966>
+##contig=<ID=NW_021964088.1,length=35370>
+##contig=<ID=NW_021964089.1,length=35237>
+##contig=<ID=NW_021964090.1,length=34147>
+##contig=<ID=NW_021964091.1,length=34090>
+##contig=<ID=NW_021964092.1,length=34088>
+##contig=<ID=NW_021964093.1,length=34032>
+##contig=<ID=NW_021964094.1,length=33849>
+##contig=<ID=NW_021964095.1,length=33756>
+##contig=<ID=NW_021964096.1,length=33543>
+##contig=<ID=NW_021964097.1,length=33382>
+##contig=<ID=NW_021964098.1,length=33501>
+##contig=<ID=NW_021964099.1,length=33099>
+##contig=<ID=NW_021964100.1,length=32808>
+##contig=<ID=NW_021964101.1,length=32562>
+##contig=<ID=NW_021964102.1,length=31990>
+##contig=<ID=NW_021964103.1,length=31926>
+##contig=<ID=NW_021964104.1,length=31478>
+##contig=<ID=NW_021964105.1,length=30657>
+##contig=<ID=NW_021964106.1,length=30584>
+##contig=<ID=NW_021964107.1,length=30444>
+##contig=<ID=NW_021964108.1,length=30196>
+##contig=<ID=NW_021964109.1,length=29292>
+##contig=<ID=NW_021964110.1,length=28903>
+##contig=<ID=NW_021964111.1,length=28350>
+##contig=<ID=NW_021964112.1,length=28090>
+##contig=<ID=NW_021964113.1,length=28007>
+##contig=<ID=NW_021964114.1,length=27470>
+##contig=<ID=NW_021964115.1,length=27389>
+##contig=<ID=NW_021964116.1,length=26829>
+##contig=<ID=NW_021964117.1,length=26913>
+##contig=<ID=NW_021964118.1,length=26580>
+##contig=<ID=NW_021964119.1,length=26707>
+##contig=<ID=NW_021964120.1,length=26153>
+##contig=<ID=NW_021964121.1,length=26230>
+##contig=<ID=NW_021964122.1,length=25374>
+##contig=<ID=NW_021964123.1,length=25268>
+##contig=<ID=NW_021964124.1,length=24071>
+##contig=<ID=NW_021964125.1,length=23842>
+##contig=<ID=NW_021964126.1,length=23826>
+##contig=<ID=NW_021964127.1,length=23263>
+##contig=<ID=NW_021964128.1,length=22538>
+##contig=<ID=NW_021964129.1,length=22532>
+##contig=<ID=NW_021964130.1,length=21579>
+##contig=<ID=NW_021964131.1,length=19892>
+##contig=<ID=NW_021964132.1,length=18371>
+##contig=<ID=NW_021964133.1,length=18001>
+##contig=<ID=NW_021964134.1,length=17611>
+##contig=<ID=NW_021964135.1,length=16426>
+##contig=<ID=NW_021964136.1,length=15610>
+##contig=<ID=NW_021964137.1,length=15018>
+##contig=<ID=NW_021964138.1,length=13902>
+##contig=<ID=NW_021964139.1,length=13298>
+##contig=<ID=NW_021964140.1,length=12241>
+##contig=<ID=NW_021964141.1,length=3512>
+##contig=<ID=NW_021964142.1,length=999106>
+##contig=<ID=NW_021964143.1,length=624042>
+##contig=<ID=NW_021964144.1,length=480930>
+##contig=<ID=NW_021964145.1,length=534417>
+##contig=<ID=NW_021964146.1,length=529629>
+##contig=<ID=NW_021964147.1,length=529319>
+##contig=<ID=NW_021964148.1,length=425668>
+##contig=<ID=NW_021964149.1,length=364145>
+##contig=<ID=NW_021964150.1,length=315032>
+##contig=<ID=NW_021964151.1,length=310480>
+##contig=<ID=NC_002081.1,length=16696>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Pop1_17284
+NC_044049.1	3890092	DEL00000000	GGGGGGGAGGGGTTGAGGGGAGGGGGGGGGGGA	G	120	LowQual	PRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=3890124;PE=0;MAPQ=0;CT=3to5;CIPOS=-7,7;CIEND=-7,7;SRMAPQ=60;INSLEN=0;HOMLEN=8;SR=2;SRQ=1;CONSENSUS=GATGTCCTCGGCCGTCGCCGTGCACTTCGGGAGGGGTGAGGGGGGAGTCACCTGTGGTCTGGTGTCACGCATCACGGCGCGCGGTCATAAAGA;CE=1.90313;CONSBP=40	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-22.1995,-1.80566,0:18:PASS:48:5:64:0:0:0:0:6
+NC_044049.1	24954025	DEL00000001	T	<DEL>	62	LowQual	IMPRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=24956392;PE=2;MAPQ=31;CT=3to5;CIPOS=-351,351;CIEND=-351,351	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	0/1:-5.29691,0,-5.0976:49:PASS:0:0:4:0:1:2:0:0
+NC_044050.1	11981896	DEL00000002	A	<DEL>	120	LowQual	IMPRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=11982842;PE=2;MAPQ=60;CT=3to5;CIPOS=-284,284;CIEND=-284,284	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-12,-0.602059,0:7:LowQual:424:280:156:1:0:2:0:0
+NC_044059.1	30040288	INS00000003	T	TAGCGTACTGCTACCTCAAGAAGCTGAAGGCCCAG	120	LowQual	PRECISE;SVTYPE=INS;SVMETHOD=EMBL.DELLYv1.5.0;END=30040288;SVLEN=34;PE=0;MAPQ=0;CT=NtoN;CIPOS=-2,2;CIEND=-2,2;SRMAPQ=60;INSLEN=34;HOMLEN=1;SR=2;SRQ=1;CONSENSUS=CAGGCACACGCACTCTTTAACCCTTCAGGGTGTTGCTGGCCATTGTAGCGTACTGCTACCTCAAGAAGCTGAAGGCCCAGGGGGAGGGTGTATCTCTCAGCAGGAGATCGAATCACCTTTGAT;CE=1.99568;CONSBP=46	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-14.4996,-1.20371,0:12:LowQual:247:488:241:2:0:0:0:4
+NC_044060.1	13623670	DEL00000004	TGGCGGATAAGCGGATGACGATGAGGAGGAGGATGA	T	120	LowQual	PRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=13623705;PE=0;MAPQ=0;CT=3to5;CIPOS=-3,3;CIEND=-3,3;SRMAPQ=60;INSLEN=0;HOMLEN=4;SR=2;SRQ=1;CONSENSUS=GTTATCCTTTCTGAACCTGGAAGTTCCCACTTCCTTCCGTGGCTGGAGTAAATAGAGGATGGGTATTGGGTTAAGGGGGCTTTGCTGTGCATCTCAAGCTGCATCTCA;CE=1.97284;CONSBP=60	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-18.2995,-1.50467,0:15:PASS:54:3:54:0:0:0:0:5
+NC_044061.1	25406901	DEL00000005	TACACACACACACACACACACACACAC	T	120	LowQual	PRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=25406927;PE=0;MAPQ=0;CT=3to5;CIPOS=-27,27;CIEND=-27,27;SRMAPQ=60;INSLEN=0;HOMLEN=27;SR=2;SRQ=0.969925;CONSENSUS=ACAAACACATACATGCACAAACTAACACACAGAAAAATATATATGCACACACACATACACACATATACACACACACACACACACACACAAACAGACAAACACACCAACCCCAGCCCAGTGCACCAGACTCCAG;CE=1.61448;CONSBP=66	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-14.1995,-1.20363,0:12:LowQual:39:17:26:1:0:0:0:4
+NC_044063.1	2411724	DEL00000006	TGATATTTATGATATTATCATTTCATTTTATTTA	T	90	LowQual	PRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=2411757;PE=0;MAPQ=0;CT=3to5;CIPOS=-5,5;CIEND=-5,5;SRMAPQ=50;INSLEN=0;HOMLEN=6;SR=2;SRQ=0.984127;CONSENSUS=TTTCTGAACAAATCAATACTTTTTATTTTTTGTATAATTTTATCATACAACATGATTTTTCATTAAATTATTGACGTCCCCCCTTTTTATGAACATTGTCTGTGTAGGCTGACGTAGGCTATGACG;CE=1.85456;CONSBP=90	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-7.2998,-0.601864,0:7:LowQual:51:4:34:0:0:0:0:2
+NC_044065.1	4877363	INS00000007	T	TGGCGAAACGATATAAATTGAGTTATGA	120	LowQual	PRECISE;SVTYPE=INS;SVMETHOD=EMBL.DELLYv1.5.0;END=4877363;SVLEN=27;PE=0;MAPQ=0;CT=NtoN;CIPOS=-7,7;CIEND=-7,7;SRMAPQ=60;INSLEN=27;HOMLEN=11;SR=2;SRQ=0.985714;CONSENSUS=AAAGTTTGTTTAGATATCAAAATTTGGCTCAGGCAATTATGTTATGTGGCGAAACGATATAAATTGAGTTATGAGGCTGACGATATGTAAGTGCAGACATACAAAGGCTCTGGAGCACCAGGACTCCCAGT;CE=1.95033;CONSBP=47	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-10.6996,-0.902734,0:10:LowQual:660:961:301:2:0:0:0:3
+NC_044067.1	8411477	DEL00000008	A	<DEL>	120	LowQual	IMPRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=8412909;PE=2;MAPQ=60;CT=3to5;CIPOS=-209,209;CIEND=-209,209	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-12,-0.602059,0:7:LowQual:0:0:2:0:0:2:0:0
+NW_021964143.1	312587	INV00000009	T	<INV>	227	PASS	IMPRECISE;SVTYPE=INV;SVMETHOD=EMBL.DELLYv1.5.0;END=408892;PE=4;MAPQ=60;CT=5to5;CIPOS=-168,168;CIEND=-168,168	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-22.7,-1.20411,0:12:LowQual:9:2004:149:25:0:4:0:0
+NW_021964143.1	314226	BND00000010	C	C[NC_044055.1:22940594[	66	LowQual	IMPRECISE;SVTYPE=BND;SVMETHOD=EMBL.DELLYv1.5.0;END=314227;CHR2=NC_044055.1;POS2=22940594;PE=2;MAPQ=35;CT=3to5;CIPOS=-452,452;CIEND=-452,452	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-6.59952,-0.601578,0:7:LowQual:11165:11307:142:2:0:2:0:0
+NW_021964143.1	314226	DEL00000011	C	<DEL>	222	PASS	IMPRECISE;SVTYPE=DEL;SVMETHOD=EMBL.DELLYv1.5.0;END=358622;PE=5;MAPQ=42;CT=3to5;CIPOS=-50,50;CIEND=-50,50	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	0/1:-21.5928,0,-3.50959:35:PASS:202:27:1772:0:1:6:0:0
+NW_021964143.1	358628	BND00000012	C	]NC_044055.1:22940739]C	240	LowQual	IMPRECISE;SVTYPE=BND;SVMETHOD=EMBL.DELLYv1.5.0;END=358629;CHR2=NC_044055.1;POS2=22940739;PE=4;MAPQ=60;CT=5to3;CIPOS=-396,396;CIEND=-396,396	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	0/1:-22.4949,0,-4.09485:41:PASS:398:21545:21147:2:1:4:0:0
+NW_021964143.1	372647	BND00000013	G	G[NC_044070.1:200501[	84	LowQual	IMPRECISE;SVTYPE=BND;SVMETHOD=EMBL.DELLYv1.5.0;END=372648;CHR2=NC_044070.1;POS2=200501;PE=3;MAPQ=29;CT=3to5;CIPOS=-426,426;CIEND=-426,426	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-12.8505,-1.7567,0:18:PASS:31766:31812:46:2:0:6:0:0
+NW_021964143.1	409177	BND00000014	G	G[NC_044048.1:28592579[	41	LowQual	IMPRECISE;SVTYPE=BND;SVMETHOD=EMBL.DELLYv1.5.0;END=409178;CHR2=NC_044048.1;POS2=28592579;PE=2;MAPQ=21;CT=3to5;CIPOS=-90,90;CIEND=-90,90	GT:GL:GQ:FT:RCL:RC:RCR:RDCN:DR:DV:RR:RV	1/1:-4.09217,-0.594232,0:7:LowQual:13635:13710:75:2:0:2:0:0
