@@ -50,6 +50,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
                              "darkviolet","cornflowerblue",
                              "darkviolet", "cornflowerblue")
   popdata
+  write.table(popdata, file="../../data/1-PopsColors.txt")
   pops <- merge(pops, popdata, by.x="family.ID", by.y="pop.names", all.x=TRUE)
   dim(pops)
   head(pops)
@@ -103,8 +104,12 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
  #### plot inversion sizes ####
   pdf("../figures/InvSizeFreq.pdf", width=6, height=5)
   par(mar=c(4,4,1,1), mfrow=c(1,1), oma=c(0,0,0,0))
-  hist(log10(SVs$invSizeMax), col="#5dade2", breaks=(seq(3, 8,by=0.1)), 
+  
+  SV_ind_filt <- 30 # minimum number of individual to plot
+  
+  hist(log10(SVs$invSizeMax[SVs$n_ind_invID>SV_ind_filt]), col="#5dade2", breaks=(seq(3, 8,by=0.1)), 
        xlab= "Log10(Inversion size in bases)", main="")
+  
   hist(log10(windows$end-windows$start), breaks=(seq(3, 8,by=0.1)), add=TRUE, col="#e2925d")
   legend("topright",
          fill=c("#5dade2", "#e2925d"), legend=c("SV-based", "PCA-based"))
@@ -112,21 +117,23 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   # SVs "#5dade2"
   # MDS "#e2925d"
   
-  par(mar=c(4,4,1,1), mfrow=c(1,1), oma=c(0,0,0,0))
-  hist((SVs$invSizeMax)/10^6, col="cornflowerblue", breaks=(seq(0, 43,by=0.1)), 
-       xlab= "Log10(Inversion size in bases)", main="")
-  hist((windows$end-windows$start)/10^6, breaks=(seq(0, 43,by=0.1)), add=TRUE)
-  legend("topright",
-         fill=c("cornflowerblue", "grey"), legend=c("SV-based", "PCA-based"))
   dev.off()
   
   summary((windows$end-windows$start))
   summary(SVs$invSizeMax)
 
-
-#### Plot windows ####
+#### prep for karyoploter ####
+  #Create custom genome
+  gadmor3_df <- data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1"), start=c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), end=c(30875876, 28732775, 30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694, 34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006))
+  head(gadmor3_df)
+  gadmor3genome <- toGRanges(gadmor3_df)
+  head(gadmor3genome)
+  
+  
+#### Begin Plot windows loop ####
 for (i in 1:nrow(windows)){
   print(i)
+  chr = windows$chromosome[i]
   subSNPs <- which(map$chromosome==windows$chromosome[i] & 
                      map$physical.pos > windows$start[i] &
                      map$physical.pos < windows$end[i]
@@ -164,18 +171,25 @@ for (i in 1:nrow(windows)){
        pch=as.numeric(factor(pops$colorEcotypes)))
   
   ### SVs ####
-  whichSVs <- which(SVs$Chrom==windows$chromosome[i] #& 
+  whichSVs <- which(SVs$Chrom==windows$chromosome[i] &
+                      SVs$n_ind_invID > SV_ind_filt #& 
                     #  (SVs$window_StartLowerCI < windows$end[i] |
                     #  SVs$window_EndUpperCI > windows$start[i])
                       )
   whichSVs
   df <- SVs[whichSVs, c("Chrom", "window_StartLowerCI", "window_EndUpperCI", "color")]
-  df$Chrom="."
+  df$Chrom=chr
   localSVs <- toGRanges(df)
-  localGenome = toGRanges(data.frame(chr=".", start= windows$start[i], end = windows$end[i]))
- 
-  kp.plot <- plotKaryotype(genome=localGenome, chromosome=".")
+
+  zoom_region <- GRanges(seqnames = windows$chromosome[i], 
+                         ranges = IRanges(start = windows$start[i], 
+                                          end = windows$end[i]))
+  
+
+  kp.plot <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL,
+                            zoom=zoom_region)
   kpPlotRegions(kp.plot, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
+  
   kpAddBaseNumbers(kp.plot, tick.dist=(windows$end[i]-windows$start[i])/5, 
                    tick.len=7.5, add.units=TRUE, units="Mb", cex=1, 
                    minor.tick.dist=(windows$end[i]-windows$start[i])/10)
@@ -186,23 +200,18 @@ for (i in 1:nrow(windows)){
 
 
 
-#### prep for karyoploter ####
-#Create custom genome
-gadmor3_df <- data.frame(chr=c("NC_044048.1", "NC_044049.1", "NC_044050.1", "NC_044051.1", "NC_044052.1", "NC_044053.1", "NC_044054.1", "NC_044055.1", "NC_044056.1", "NC_044057.1", "NC_044058.1", "NC_044059.1", "NC_044060.1", "NC_044061.1", "NC_044062.1", "NC_044063.1", "NC_044064.1", "NC_044065.1", "NC_044066.1", "NC_044067.1", "NC_044068.1", "NC_044069.1", "NC_044070.1"), start=c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), end=c(30875876, 28732775, 30954429, 43798135, 25300426, 27762770, 34137969, 29710654, 26487948, 27234273, 30713045, 30948897, 28829685, 29586942, 28657694, 34794352, 21723002, 24902675, 22015597, 24843429, 22358821, 23744039, 25242006))
-head(gadmor3_df)
-gadmor3genome <- toGRanges(gadmor3_df)
-head(gadmor3genome)
 
 
 ### Karyotyper code for a specific region
 
-
-my_plots <- function(chr, zoom_start, zoom_end){
+### SV plotting function with zoom  
+my_plots <- function(chr, zoom_start, zoom_end, folder){
   
-  pdf(paste0("../results-heatmap-otherRanges/",
-             windows$chromosome[i],"_Chrom",windows$chr_num[i],
+  pdf(paste0(folder,
+             chr,"Chrom_",
              "start",zoom_start/10^6,"-end", zoom_end/10^6,"Mb.pdf"), width=6, height=6)
-  whichSVs <- which(SVs$Chrom==chr #& 
+  whichSVs <- which(SVs$Chrom==chr &
+                      SVs$n_ind_invID > SV_ind_filt #& 
                     #  (SVs$window_StartLowerCI < windows$end[i] |
                     #  SVs$window_EndUpperCI > windows$start[i])
   )
@@ -216,7 +225,7 @@ my_plots <- function(chr, zoom_start, zoom_end){
   kpAddBaseNumbers(kp.chrom, tick.dist=(zoom_end-zoom_start)/5, tick.len=7.5, add.units=TRUE, 
                    units="Mb", minor.tick.dist=(zoom_end-zoom_start)/10, minor.tick.len=5, cex=1)
   
-
+  
   
   
   #heatmap and pca
@@ -247,7 +256,19 @@ my_plots <- function(chr, zoom_start, zoom_end){
   plot(scores, col=pops$colorEcotypes, 
        pch=as.numeric(factor(pops$colorEcotypes)))
   dev.off()
- }
+}
 
+chromosomes <- levels(as.factor(map$chromosome))
+chromosomes
 
-my_plots(chr = "NC_044051.1", zoom_start <- 17*10^6, zoom_end <- 19*10^6)
+## Chrom 1
+my_plots(chr = chromosomes[1], zoom_start <- 10*10^6, zoom_end <- 29*10^6,
+         folder="../results-heatmap-otherRanges/")
+my_plots(chr = chromosomes[1], zoom_start <- 12*10^6, zoom_end <- 14*10^6,
+         folder="../results-heatmap-otherRanges/")
+my_plots(chr = chromosomes[1], zoom_start <- 17*10^6, zoom_end <- 20*10^6,
+         folder="../results-heatmap-otherRanges/")
+
+## 
+my_plots(chr = "NC_044051.1", zoom_start <- 17*10^6, zoom_end <- 19*10^6,
+         folder="../results-heatmap-otherRanges/")
