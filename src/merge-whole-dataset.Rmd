@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+setwd("G:/Research")
 ```
 
 ## Set up
@@ -16,21 +17,20 @@ library(stringr)
 library(StructuralVariantAnnotation)
 library(VariantAnnotation)
 
-setwd("/projects/lotterhos/2020_CodGenomes_Inversions")
 ```
 
 ```{r read in the files}
 #DELLY vcf
-delly_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files=FALSE, full.names=TRUE)
-delly <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/delly", all.files=FALSE)
+delly_files <- list.files(path="G:/Research/delly", all.files=FALSE, full.names=TRUE)
+delly <- list.files(path="G:/Research/delly", all.files=FALSE)
 
 #GRIDSS independent vcf
-gridss_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss", all.files = FALSE, full.names = TRUE)
-gridss <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss", all.files = FALSE)
+gridss_files <- list.files(path="G:/Research/gridss", all.files = FALSE, full.names = TRUE)
+gridss <- list.files(path="G:/Research/gridss", all.files = FALSE)
 
 #GRIDSS DELLY vcf
-gridss.delly_files <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss-delly", all.files = FALSE, full.names = TRUE)
-gridss.delly <- list.files(path="/projects/lotterhos/2020_CodGenomes_Inversions/outputs/gridss-delly", all.files = FALSE)
+gridss.delly_files <- list.files(path="G:/Research/gridss-delly", all.files = FALSE, full.names = TRUE)
+gridss.delly <- list.files(path="G:/Research/gridss-delly", all.files = FALSE)
 
 individuals.names <- substr(delly, 12, 16) #extract list of individuals present using delly list
 individuals.names_pop <- substr(gridss, 8, 17) #extract a list of individuals present (including pop) using gridss list
