@@ -291,7 +291,8 @@ chromosomes
 
 
 
-## Loop through PCA windows and make plots
+## Loop through PCA windows and make plots #### 
+## no need to rerun
  folder1 = "../results-heatmapsPCAsByMDSOutlier-100windows/"
 for (j in 1:nrow(windows)){
   print(j)
@@ -321,6 +322,22 @@ for (j in 1:nrow(windows)){
           folder="../results-heatmap-otherRanges/")
  my_plots(1, zoom_start <- 28*10^6, zoom_end <- 30*10^6,
           folder="../results-heatmap-otherRanges/")
+ 
+## Chrom 7 plots ####
+ my_plots(7, zoom_start <- 15*10^6, zoom_end <- 30*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(7, zoom_start <- 16*10^6, zoom_end <- 18*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(7, zoom_start <- 23.5*10^6, zoom_end <- 24.5*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(7, zoom_start <- 26*10^6, zoom_end <- 27*10^6,
+          folder="../results-heatmap-otherRanges/")
+ 
+ 
+## Chrom 12 plots ####
+ my_plots(12, zoom_start <- 0*10^6, zoom_end <- 15*10^6,
+          folder="../results-heatmap-otherRanges/")
+ 
  
  
   my_plots(chr = "NC_044051.1", zoom_start <- 17*10^6, zoom_end <- 19*10^6,

@@ -16,7 +16,7 @@ srun -p short -N 1 --pty /bin/bash
 cd /projects/lotterhos/Containers
 apptainer run -B $(cd ../ && pwd):/projects/lotterhos wally.sif
 
-# run wally without split
+# run wally with split
 path_out="/projects/lotterhos/2020_CodGenomes/labeled_bam_Out/ReadVisualizations/"
 cd ${path_out}
 
@@ -25,8 +25,6 @@ cd ${path_out}
 #wally region -p -r NC_044048.1:11250000-11500000:/projects/lotterhos/2020_CodGenomes/labeled_bam_Out/ReadVisualizations/NC_044048.1_11250000-11500000/NC_044048.1_11250000-11500000_Pop1_16216.f.rg.bam -g ../../Cod_genome_data/GCF_902167405.1_gadMor3.0_genomic.fna ../indexedSorted/Pop1_16216.f.rg.bam_sorted.bam 
 #wally region -p -r NC_044048.1:11250000-11500000 -g ../../Cod_genome_data/GCF_902167405.1_gadMor3.0_genomic.fna ../indexedSorted/Pop1_16216.f.rg.bam_sorted.bam 
 
-
-chr=NC_044048.1
 genome=../../Cod_genome_data/GCF_902167405.1_gadMor3.0_genomic.fna
 echo $genome
 
@@ -34,6 +32,8 @@ echo $genome
 #split=1
 #myregion=${chr}:11250000-11600000 #example with one window
 
+### This is the section to edit for where you want to see the mapped reads
+chr=NC_044048.1
 split=4
 myregion=${chr}:11250000-11500000,${chr}:13200000-13500000,${chr}:20500000-21000000,${chr}:28000000-29000000 #xample with split window
 myplot1=$(echo $myregion | tr ':,' '_')

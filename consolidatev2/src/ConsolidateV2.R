@@ -25,9 +25,9 @@ dim(inv)
 
 inv <- inv %>%
   mutate(PROGRAM_col = case_when(
-    PROGRAM== "DELLY" ~ "red",
+    PROGRAM== "DELLY" ~ "orange",
     PROGRAM == "GRIDSS" ~ "blue",
-    PROGRAM == "GRIDSS (DELLY)" ~ "purple",
+    PROGRAM == "GRIDSS (DELLY)" ~ "green",
   ))
 
 head(inv)
@@ -46,9 +46,10 @@ sum(is.na(inv$END_PLUS_CI)) # no NAs
 inv$maxSize <- inv$END_PLUS_CI-inv$POS_MINUS_CI
 summary(inv$maxSize)
 
-### REvmove inversions less than 100 bp ####
-sum(inv$maxSize<100, na.rm=TRUE)
-inv = inv[-which(inv$maxSize<100),]
+### REvmove inversions less than 50 bp ####
+hist(log10(inv$maxSize), breaks=seq(0,8,by=0.1))
+sum(inv$maxSize<50, na.rm=TRUE)
+inv = inv[-which(inv$maxSize<50),]
 hist(log10(inv$maxSize), breaks=seq(0,8,by=0.1))
 
 # study CI ####
@@ -87,7 +88,7 @@ head(inv)
   inv_new_df = NULL
   
   hist((inv$maxSize*overlap))
-  inv$window <- round(pmin(inv$maxSize*overlap,400000))
+  inv$window <- round(pmin(inv$maxSize*overlap,200000))
   hist(inv$window)
   
   # Extend CI
