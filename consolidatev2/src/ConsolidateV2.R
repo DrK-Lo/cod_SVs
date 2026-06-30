@@ -2,6 +2,7 @@
 ## KE Lotterhos
 ## July 2026
 library(dplyr)
+library(tidyr)
 
 setwd("/Users/k.lotterhos/Documents/GitHub/cod_SVs/consolidatev2/src")
 inv <- read.csv("../../outputs/INV-dataset.csv")
@@ -31,13 +32,13 @@ inv <- inv %>%
 
 head(inv)
 
-## REmove 0/0 genotypes
+## REmove 0/0 genotypes ####
 table(inv$GT)
 length(which(inv$GT=="0/0"))
 inv <- inv[-which(inv$GT=="0/0"),]
 dim(inv)
 
-## Sanity checks
+## Sanity checks ####
 sum(inv$POS>inv$END, na.rm=TRUE) # should be 0 if all of the start points are less than end points
 sum(is.na(inv$POS_MINUS_CI))
 sum(is.na(inv$END_PLUS_CI)) # no NAs
@@ -45,6 +46,7 @@ sum(is.na(inv$END_PLUS_CI)) # no NAs
 inv$maxSize <- inv$END_PLUS_CI-inv$POS_MINUS_CI
 summary(inv$maxSize)
 
+### REvmove inversions less than 100 bp ####
 sum(inv$maxSize<100, na.rm=TRUE)
 inv = inv[-which(inv$maxSize<100),]
 hist(log10(inv$maxSize), breaks=seq(0,8,by=0.1))
@@ -57,7 +59,7 @@ plot(inv$maxSize, inv$POS_PLUS_CI-inv$POS_MINUS_CI)
 
 
 
-## Sort inv by chromsome,POS_PLUS_CI## Sort inv by chromsome, pos, end
+## Sort inv by chromsome, pos, end ####
 myorder <- order(inv$CHROM, inv$POS_MINUS_CI, inv$END_PLUS_CI, inv$PROGRAM)
 inv <- inv[myorder,]
 head(inv)
@@ -85,7 +87,7 @@ head(inv)
   inv_new_df = NULL
   
   hist((inv$maxSize*overlap))
-  inv$window <- round(pmin(inv$maxSize*overlap,200000))
+  inv$window <- round(pmin(inv$maxSize*overlap,400000))
   hist(inv$window)
   
   # Extend CI
@@ -111,21 +113,21 @@ for (i in 1:length(chromosomes)){
   arrows(x0=(inv_chrom$POS_MINUS_CI), 
          x1=inv_chrom$END_PLUS_CI,
        y0=(1:nrow(inv_chrom)), col=(inv_chrom$PROGRAM_col), xlim=c(0,30*10^6),
-       main=chromosomes[i], lwd=0.1)
+       main=chromosomes[i], lwd=0.1, angle=100, length=0.1, code=3)
   
   plot(NULL, xlim=c(0, max(inv_chrom$END_PLUS_CI)), ylim=c(0, nrow(inv_chrom)),
        main=chromosomes[i])
   arrows(x0=(inv_chrom$POS_MINUS_CI), 
          x1=inv_chrom$END_PLUS_CI,
            y0=(1:nrow(inv_chrom)), col=(inv_chrom$FILTER=="PASS")+1, xlim=c(0,30*10^6),
-         main=chromosomes[i], lwd=0.1)
+         main=chromosomes[i], lwd=0.1, angle=100, length=0.1, code=3)
   dev.off()
   
   inspect <- data.frame(table(inv_chrom$cat_unique))
   dim(inspect)
-  filter <- which(inspect$Freq>15)
+  filter <- which(inspect$Freq>5)
   length(filter)
-  inspect[filter,]
+  inspect2 <- inspect[filter,]
   #which(inv_chrom$cat_unique=="NC_044048.1-13350362-13350366-24859951-24859955")
   
   
@@ -192,8 +194,7 @@ for (i in 1:length(chromosomes)){
                                      start_plus_CI_group,
                                      start_minus_CI_group,
                                      end_plus_CI_group,
-                                     end_minus_CI_group,
-                                      pass=NA)
+                                     end_minus_CI_group)
     consensus_df <- rbind(consensus_df,consensus_df_group)
     
     # Give them the same ID
@@ -208,78 +209,19 @@ for (i in 1:length(chromosomes)){
 } # end chrom loop ####
 
 
-## AFter looping - Summary stats for consensus calls ####
+## AFter looping - Summary stats for consensus calls and PASS criteria ####
 
 head(consensus_df)
 dim(consensus_df)
+  plot(consensus_df$n_programs_group, consensus_df$n_ind_group)
 
-  consensus_df$pass <- consensus_df$n_programs_group >= 2 &
+  consensus_df$pass1 <- consensus_df$n_programs_group >= 3 &
                       consensus_df$n_PASS_group >= 1 &
-                      consensus_df$n_ind_group > 15
+                      consensus_df$n_ind_group >= 15
 
   table(consensus_df$chrom)
-  table(consensus_df$chrom,consensus_df$pass)
-  sum(consensus_df$pass)
-
-## Loop through chrom and make plots
-for (i in 1:length(chromosomes)){
-  
-  print(chromosomes[i])
-    
-  consensus_df_chrom <- consensus_df[consensus_df$chrom==chromosomes[i],]
-  consensus_df_chrom <- consensus_df_chrom[order(consensus_df_chrom$chrom, 
-                                         consensus_df_chrom$start_minus_CI_group,
-                                         consensus_df_chrom$end_plus_CI_group),]
-  mypass <- which(consensus_df_chrom$pass)
-  npass <- length(mypass)
-
-  consensus_pass <- consensus_df_chrom[mypass,]
-  dim(consensus_pass)
-  consensus_pass <- consensus_pass[order(consensus_pass$chrom, 
-                                     consensus_pass$start_minus_CI_group,
-                                     consensus_pass$end_plus_CI_group),]
-
-
-pdf(paste0("../figures/",chromosomes[i],"ConsensusCalls.pdf"), height=20, width=10)
-  
- #hist(consensus_df_chrom$start_minus_CI_group/10^6, breaks=0:60)
- #hist(consensus_df_chrom$end_plus_CI_group/10^6, breaks=0:60)
-
-  plot(NULL, xlim=c(0, max(consensus_df_chrom$end_plus_CI_group)), ylim=c(0, nrow(consensus_df_chrom)),
-     main=chromosomes[i])
-  arrows(x0=(consensus_df_chrom$start_plus_CI_group+
-               consensus_df_chrom$start_minus_CI_group)/2, 
-         x1=(consensus_df_chrom$end_plus_CI_group+
-               consensus_df_chrom$end_minus_CI_group)/2,
-         y0=(1:nrow(consensus_df_chrom)), 
-         lwd=consensus_df_chrom$n_ind_group/20, col="red")
-  
-  
-  #hist(consensus_pass$start_minus_CI_group/10^6, breaks=0:60)
-  #hist(consensus_pass$end_plus_CI_group/10^6, breaks=0:60)
-            
-  plot(NULL, xlim=c(0, max(consensus_df_chrom$end_plus_CI_group)), ylim=c(0, npass),
-     main=chromosomes[i])
-  arrows(x0=(consensus_pass$start_plus_CI_group+
-               consensus_pass$start_minus_CI_group)/2, 
-       x1=(consensus_pass$end_plus_CI_group+
-             consensus_pass$end_minus_CI_group)/2,
-       y0=(1:npass), lwd=consensus_pass$n_ind_group/20+1, col="red")
-dev.off()
- 
-}# end loop through chromosomes
-
-  
-# Write tables
-write.csv(consensus_df,"../data_outputs/Consensus_List_unique.csv")
-dim(consensus_df)
-hist(consensus_df$ConsensusID, breaks=seq(0,30000, by=1000))
-
-dim(inv)
-dim(inv_new_df)
-sum(is.na(inv_new_df$ConsensusID)) # sanity check, should be 0
-hist(inv_new_df$ConsensusID, breaks=seq(0,30000, by=1000)) #sanity check, make sure filtered IDs span range
-write.csv(inv_new_df,gzfile("../data_outputs/INV-dataset-ConsensusID-unfiltered.csv.gz"))
+  table(consensus_df$chrom,consensus_df$pass1)
+  sum(consensus_df$pass1)
 
 
 ### Filtered individuals DF ####
@@ -288,7 +230,7 @@ ind_filtered <- merge(inv_new_df[,c("INDIVIDUAL","PROGRAM","GT","FILTER","Consen
 dim(ind_filtered) # same dimensions as pre-merge
 head(ind_filtered)
 
-ind_filtered <- ind_filtered[which(ind_filtered$pass),]
+ind_filtered <- ind_filtered[which(ind_filtered$pass1),]
 dim(ind_filtered)
 head(ind_filtered)
 
@@ -370,7 +312,7 @@ ind_filtered_final3 <- ind_filtered_final3[order(ind_filtered_final3$INDIVIDUAL,
 
 
 ## Individual pass criteria ####
-ind_filtered_final3$pass_ind <- ind_filtered_final3$n_programs_ind >=2 & 
+ind_filtered_final3$pass_ind <- ind_filtered_final3$n_programs_ind >= 3 & 
   ind_filtered_final3$n_pass_ind > 0
 
 
@@ -386,8 +328,113 @@ summary(as.numeric(inv_per_ind))
 
 str(ind_filtered_final3)
 
-## Write Individual file ####
-write.csv(ind_filtered_final3,"../data_outputs/INV-dataset-ConsensusID-Ind-Filtered.csv")
+## Calculate individual level pass stats for each Consensus ID ####
+  ind_pass <- table(ind_filtered_final3$ConsensusID, ind_filtered_final3$pass_ind)
+  ind_pass <- data.frame(as.matrix(ind_pass))
+  head(ind_pass)
+  names(ind_pass) <- c("ConsensusID", "pass", "n_ind")
+  head(ind_pass)
+  ind_pass <- data.frame(pivot_wider(ind_pass, names_from = pass, values_from = n_ind))
+  head(ind_pass)
+  colnames(ind_pass) <- c("ConsensusID","n_NOpass_ind_group", "n_PASS_ind_group")
+  #write.csv(ind_pass, "../data_outputs/INV-dataset-ConsensusID_unique-IndLevelPassStats.csv")
+  hist(ind_pass[,"n_PASS_ind_group"])
+  ind_pass$pass2_ind <- ind_pass$n_PASS_ind > 5
+  head(ind_pass)
+  
+  dim(consensus_df)
+  consensus_df2 <- merge(consensus_df, ind_pass, by="ConsensusID", all.x=TRUE)
+  dim(consensus_df2)
+  head(consensus_df2)
+
+  # inspect 
+  consensus_df2$maxSize <- consensus_df2$end_plus_CI_group-consensus_df2$start_minus_CI_group
+  LG12 <- consensus_df2[consensus_df2$chrom==chromosomes[12],]
+  LG12 <- LG12[which(LG12$end_minus_CI_group<15*10^6 & LG12$maxSize>8*10^6),]
+  # LG12 is tricky. The consensus ID for the likely inversion is 11797.
+  # It starts near 0 and ends near 15, and 21 individuals share it. 
+  # However, within an individual, only one individual passes.
+  # There are others, but no passing
+  
+## Loop through chrom and make plots ####
+for (i in 1:length(chromosomes)){
+  
+  print(chromosomes[i])
+  
+  consensus_df_chrom <- consensus_df2[consensus_df$chrom==chromosomes[i],]
+  consensus_df_chrom <- consensus_df_chrom[order(consensus_df_chrom$chrom, 
+                                                 consensus_df_chrom$start_minus_CI_group,
+                                                 consensus_df_chrom$end_plus_CI_group),]
+
+  consensus_pass1 <- consensus_df_chrom[which(consensus_df_chrom$pass1),]
+  consensus_pass2 <- consensus_df_chrom[which(consensus_df_chrom$pass2_ind),]
+
+pdf(paste0("../figures/",chromosomes[i],"ConsensusCalls.pdf"), height=20, width=10)
+
+#hist(consensus_df_chrom$start_minus_CI_group/10^6, breaks=0:60)
+#hist(consensus_df_chrom$end_plus_CI_group/10^6, breaks=0:60)
+
+plot(NULL, xlim=c(0, max(consensus_df_chrom$end_plus_CI_group)), 
+     ylim=c(0, nrow(consensus_df_chrom)),
+     main=chromosomes[i])
+arrows(x0=(consensus_df_chrom$start_plus_CI_group+
+             consensus_df_chrom$start_minus_CI_group)/2, 
+       x1=(consensus_df_chrom$end_plus_CI_group+
+             consensus_df_chrom$end_minus_CI_group)/2,
+       y0=(1:nrow(consensus_df_chrom)), 
+       lwd=consensus_df_chrom$n_ind_group/20, col="red", 
+       angle=100, length=0.1, code=3)
+
+
+#hist(consensus_pass$start_minus_CI_group/10^6, breaks=0:60)
+#hist(consensus_pass$end_plus_CI_group/10^6, breaks=0:60)
+
+plot(NULL, xlim=c(0, max(consensus_df_chrom$end_plus_CI_group)), 
+     ylim=c(0, nrow(consensus_pass1)),
+     main=c(chromosomes[i], "pass1"))
+arrows(x0=(consensus_pass1$start_plus_CI_group+
+             consensus_pass1$start_minus_CI_group)/2, 
+       x1=(consensus_pass1$end_plus_CI_group+
+             consensus_pass1$end_minus_CI_group)/2,
+       y0=(1:nrow(consensus_pass1)), lwd=consensus_pass1$n_ind_group/20+1, 
+       col="red", angle=100, length=0.1, code=3)
+
+plot(NULL, xlim=c(0, max(consensus_df_chrom$end_plus_CI_group)), 
+     ylim=c(0, nrow(consensus_pass2)),
+     main=c(chromosomes[i], "pass2"))
+arrows(x0=(consensus_pass2$start_plus_CI_group+
+             consensus_pass2$start_minus_CI_group)/2, 
+       x1=(consensus_pass2$end_plus_CI_group+
+             consensus_pass2$end_minus_CI_group)/2,
+       y0=(1:nrow(consensus_pass2)), lwd=consensus_pass2$n_ind_group/20+1, 
+       col="red", angle=100, length=0.1, code=3)
+dev.off()
+
+}# end loop through chromosomes
+
+  
+### Write tables ####
+  write.csv(consensus_df2,"../data_outputs/INV-dataset-ConsensusID_unique.csv")
+  dim(consensus_df2)
+  hist(consensus_df2$ConsensusID, breaks=seq(0,30000, by=1000))
+  
+  dim(inv)
+  dim(inv_new_df)
+  sum(is.na(inv_new_df$ConsensusID)) # sanity check, should be 0
+  hist(inv_new_df$ConsensusID, breaks=seq(0,30000, by=1000)) #sanity check, make sure filtered IDs span range
+  write.csv(inv_new_df,gzfile("../data_outputs/INV-dataset-ConsensusID-unfiltered-individuals.csv.gz"))
+  
+  
+## Write Individual file with filtering ####
+  head(ind_filtered_final3)
+  dim(ind_filtered_final3)
+  head(ind_pass)
+  ind_filtered_final4 <- merge(ind_filtered_final3, ind_pass, by="ConsensusID", all.x=TRUE) #merge in pass 2 criteria
+  dim(ind_filtered_final4)
+  head(ind_filtered_final4)
+
+
+write.csv(ind_filtered_final4,"../data_outputs/INV-dataset-ConsensusID-Ind-Filtered.csv")
 
 ## Loop through chrom and make individual level plots ####
 for (i in 1:length(chromosomes)){
@@ -415,18 +462,21 @@ for (i in 1:length(chromosomes)){
          x1=(ind_filtered_final3_chrom$end_plus_CI_group+
                ind_filtered_final3_chrom$end_minus_CI_group)/2,
          y0=(1:nrow(ind_filtered_final3_chrom)), 
-         col=as.character(ind_filtered_final3_chrom$colorEcotypes))
+         col=as.character(ind_filtered_final3_chrom$colorEcotypes),
+         code=3, angle=100, length=0.1)
   
   plot(NULL, xlim=c(0, max(ind_filtered_final3_chrom$end_plus_CI_group)), 
        ylim=c(0, nrow(ind_filtered_final3_chrom_filtered)),
-       main=paste(chromosomes[i], "filtered 2 programs; 1 pass"))
+       main=paste(chromosomes[i], "filtered 3 programs; 1 pass"))
    arrows(x0=(ind_filtered_final3_chrom_filtered$start_plus_CI_group+
                ind_filtered_final3_chrom_filtered$start_minus_CI_group)/2, 
          x1=(ind_filtered_final3_chrom_filtered$end_plus_CI_group+
                ind_filtered_final3_chrom_filtered$end_minus_CI_group)/2,
          y0=(1:nrow(ind_filtered_final3_chrom_filtered)), 
-         col=as.character(ind_filtered_final3_chrom_filtered$colorEcotypes))
+         col=as.character(ind_filtered_final3_chrom_filtered$colorEcotypes),
+         angle=100, length=0.1, code=3)
 
   dev.off()
   
 }# end loop through chromosomes
+   

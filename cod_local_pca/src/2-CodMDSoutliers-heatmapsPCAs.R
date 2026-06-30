@@ -43,7 +43,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   
   rm(my_snps)
 
-## Read in pop data and label rows of G
+## Read in pop data and label rows of G ####
   popdata <- read.table("../../data/1-Pops.txt", header=TRUE)
   popdata$pop <- paste(popdata$region, popdata$ecotype, sep="-")
   popdata$colorEcotypes <- c(rep("lightblue", 5),
@@ -58,7 +58,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   head(pops)
   rownames(G) <- pops$pop.sampleID # label G row names
 
-# Reorganize G according to populations
+# Reorganize G according to populations ####
   my.order <- order(pops$pop.sampleID)
   pops <- pops[my.order,] 
   
@@ -71,17 +71,24 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   windows <- read.table(paste0("../data_outputs/local_pca_results_UniquePCAwindows-",
                                window_size,"SNPwindow.txt"), header=TRUE)
   head(windows)
+  table(windows$chr_num)
 
 #### Read in the unique SV table ####
-  SVs <- read.csv("../../outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv")
-  head(SVs)
-  SVs$invSizeMin[SVs$invSizeMin < 0] <- 0
+    SVs <- read.csv("../../consolidatev2/data_outputs/INV-dataset-ConsensusID_unique.csv")
+    head(SVs)
+    #SVs$invSizeMin[SVs$invSizeMin < 0] <- 0 OLD OUTPUTS
+    summary(SVs$n_PASS_ind_group)
+    SVs <- SVs[which(SVs$pass2_ind>0),]
+    dim(SVs)
+    SVs <- SVs[order(SVs$chrom, SVs$start_minus_CI_group, SVs$end_plus_CI_group),]
   
-  ## Add color by number of individuals
-  color_endpoints <- c(grey(0.95), "#5dade2")
-  SVs$color <- colByValue(SVs$n_ind_invID, colors = c(color_endpoints))
+  ## Add color by number of individuals and print legend ####
+  color_endpoints <- c(grey(0.95), "#5dade2", "black")
+  #SVs$color <- colByValue(SVs$n_ind_invID, colors = c(color_endpoints)) # old code
+  SVs$color <- colByValue(SVs$n_PASS_ind, 
+                          colors = c(color_endpoints), min=0, max=294)
   
-  summary(SVs$n_ind_startWindows)
+  
   color_gradient <- t(colorRampPalette(color_endpoints)(100))
 
   pdf("../figures/ColorRampLegend.pdf", width=6, height=4)
@@ -92,27 +99,38 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   rect(xleft = 10, ybottom = 4, xright = 90, ytop = 5, border = "black", lwd = 1)
   # 5. Add tick mark labels underneath the bar
   # 'adj' controls horizontal alignment (0 = left, 0.5 = center, 1 = right)
-  vals_min=15
+  vals_min=0
   vals_max=294
   text(x = 10, y = 3.5, labels = paste0(vals_min), adj = 0, cex = 0.9)
   text(x = 50, y = 3.5, labels = floor(vals_max-vals_min)/2, adj = 0.5, cex = 0.9)
   text(x = 90, y = 3.5, labels = paste0(vals_max), adj = 1, cex = 0.9)
-  text(x = 50, y = 5.5, labels = "Number of individuals", font = 2, cex = 1.1)
+  text(x = 10, y = 5.5, labels = 0, adj = 0, cex = 0.9)
+  text(x = 50, y = 5.5, labels = 0.5, adj = 0.5, cex = 0.9)
+  text(x = 90, y = 5.5, labels = 1, adj = 1, cex = 0.9)
+  text(x = 50, y = 2.8, labels = "Number of individuals", font = 2, cex = 1.1)
+  text(x = 50, y = 6.2, labels = "Proportion of individuals", font = 2, cex = 1.1)
   dev.off()
   
 
+### Read in individual SVs ####
+  SVs_ind <- read.csv("../../consolidatev2/data_outputs/INV-dataset-ConsensusID-Ind-Filtered.csv")
+  head(SVs_ind) 
+  SVs_ind <- SVs_ind[which(SVs_ind$pass_ind),]
+  head(SVs_ind)
+  
+  
  #### plot inversion sizes ####
   pdf("../figures/InvSizeFreq.pdf", width=6, height=5)
   par(mar=c(4,4,1,1), mfrow=c(1,1), oma=c(0,0,0,0))
   
-  SV_ind_filt <- 30 # minimum number of individual to plot
+  hist(log10(SVs$maxSize), col="#5dade2", breaks=(seq(2, 8,by=0.1)),
+       xlab= "Log10(Inversion size in bases)", main="", ylim=c(0,55), cex=1.5)
   
-  hist(log10(SVs$invSizeMax[SVs$n_ind_invID>SV_ind_filt]), col="#5dade2", breaks=(seq(3, 8,by=0.1)), 
-       xlab= "Log10(Inversion size in bases)", main="")
-  
-  hist(log10(windows$end-windows$start), breaks=(seq(3, 8,by=0.1)), add=TRUE, col="#e2925d")
+  hist(log10(windows$end-windows$start), breaks=(seq(2, 8,by=0.1)), add=TRUE, 
+       col=adjustcolor("#e2925d", alpha=0.8))
   legend("topright",
-         fill=c("#5dade2", "#e2925d"), legend=c("SV-based", "PCA-based"))
+         fill=c("#5dade2", "#e2925d"), legend=c("Read-based", "PCA-based"),
+         bty="n", cex=1.5)
   
   # SVs "#5dade2"
   # MDS "#e2925d"
@@ -120,7 +138,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   dev.off()
   
   summary((windows$end-windows$start))
-  summary(SVs$invSizeMax)
+  summary(SVs$maxSize)
 
 #### prep for karyoploter ####
   #Create custom genome
@@ -128,112 +146,26 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   head(gadmor3_df)
   gadmor3genome <- toGRanges(gadmor3_df)
   head(gadmor3genome)
-  
-  
-#### Begin Plot windows loop ####
-for (i in 1:nrow(windows)){
-  print(i)
-  chr = windows$chromosome[i]
-  subSNPs <- which(map$chromosome==windows$chromosome[i] & 
-                     map$physical.pos > windows$start[i] &
-                     map$physical.pos < windows$end[i]
-  )
-  nsnps <- length(subSNPs)
-  Gsub <- G[,subSNPs]
-  dim(Gsub)
-  mainName <- paste0("WindowID: ", windows$PCAwindowID[i], "; ", 
-                     windows$chromosome[i], " (LG ",windows$chr_num[i],"); ",
-                     nsnps, " SNPs")
-  pdf(paste0("../results-heatmapsPCAsByMDSOutlier-100windows/",
-             windows$chromosome[i],"_Chrom",windows$chr_num[i],"_WindowID_",windows$PCAwindowID[i],".pdf"  ),
-      width=6, height=6)
-  
-  # heatmaps can handle about 1000 snps
-    if (ncol(Gsub)>3000){ Gplot <- Gsub[,sort(sample(1:ncol(Gsub), 3000))]}else{
-      Gplot <- Gsub
-    }
-  
-  ### Heatmap ####
-  heatmap(Gplot, Colv = NA, scale = "none",
-          main = mainName, RowSideColors = pops$colorEcotypes, cexRow=0.2
-          )
-  heatmap(Gplot, Colv = NA, Rowv = NA, scale = "none",
-                   main = mainName, RowSideColors = pops$colorEcotypes,
-          cexRow=0.2
-  )
-  
-  #### PCA ####
-  pcasub <- pca(Gsub, method = "ppca", nPcs = 2)
-    #perform probabilitistic PCA for missing data
-  scores <- scores(pcasub)
-  head(scores)
-  plot(scores, main=mainName, col=pops$colorEcotypes, 
-       pch=as.numeric(factor(pops$colorEcotypes)))
-  
-  ### SVs ####
-  whichSVs <- which(SVs$Chrom==windows$chromosome[i] &
-                      SVs$n_ind_invID > SV_ind_filt #& 
-                    #  (SVs$window_StartLowerCI < windows$end[i] |
-                    #  SVs$window_EndUpperCI > windows$start[i])
-                      )
-  whichSVs
-  df <- SVs[whichSVs, c("Chrom", "window_StartLowerCI", "window_EndUpperCI", "color")]
-  df$Chrom=chr
-  localSVs <- toGRanges(df)
-
-  zoom_region <- GRanges(seqnames = windows$chromosome[i], 
-                         ranges = IRanges(start = windows$start[i], 
-                                          end = windows$end[i]))
-  
-
-  kp.plot <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL,
-                            zoom=zoom_region)
-  kpPlotRegions(kp.plot, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
-  
-  kpAddBaseNumbers(kp.plot, tick.dist=(windows$end[i]-windows$start[i])/5, 
-                   tick.len=7.5, add.units=TRUE, units="Mb", cex=1, 
-                   minor.tick.dist=(windows$end[i]-windows$start[i])/10)
-  
-  dev.off()
-  
-}
 
 
-
-
-
-### Karyotyper code for a specific region
 
 ### SV plotting function with zoom  
-my_plots <- function(chr, zoom_start, zoom_end, folder){
+my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
   
+  chr <- chromosomes[chr_num]
+  mainName = chr
   pdf(paste0(folder,
-             chr,"Chrom_",
-             "start",zoom_start/10^6,"-end", zoom_end/10^6,"Mb.pdf"), width=6, height=6)
-  whichSVs <- which(SVs$Chrom==chr &
-                      SVs$n_ind_invID > SV_ind_filt #& 
-                    #  (SVs$window_StartLowerCI < windows$end[i] |
-                    #  SVs$window_EndUpperCI > windows$start[i])
-  )
-  zoom_region <- GRanges(seqnames = chr, 
-                         ranges = IRanges(start = zoom_start, end = zoom_end))
-  df <- SVs[whichSVs, c("Chrom", "window_StartLowerCI", "window_EndUpperCI", "color")]
-  localSVs <- toGRanges(df)
-  kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL,
-                            zoom=zoom_region)
-  kpPlotRegions(kp.chrom, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
-  kpAddBaseNumbers(kp.chrom, tick.dist=(zoom_end-zoom_start)/5, tick.len=7.5, add.units=TRUE, 
-                   units="Mb", minor.tick.dist=(zoom_end-zoom_start)/10, minor.tick.len=5, cex=1)
+             chr,"_Chrom-", chr_num, "_windowID-", windowID,
+             "_start-", round(zoom_start/10^6,3),"_end-", round(zoom_end/10^6,3),"Mb.pdf"), width=6, height=6)
+
   
-  
-  
-  
+  chr = chromosomes[chr_num]
   #heatmap and pca
   subSNPs <- which(map$chromosome==chr  & 
                      map$physical.pos > zoom_start &
                      map$physical.pos < zoom_end
   )
-  nsnps <- length(subSNPs)
+  (nsnps <- length(subSNPs))
   Gsub <- G[,subSNPs]
   # heatmaps can handle about 1000 snps
   if (ncol(Gsub)>3000){ Gplot <- Gsub[,sort(sample(1:ncol(Gsub), 3000))]}else{
@@ -255,20 +187,142 @@ my_plots <- function(chr, zoom_start, zoom_end, folder){
   head(scores)
   plot(scores, col=pops$colorEcotypes, 
        pch=as.numeric(factor(pops$colorEcotypes)))
+  
+  
+  ### consensus SVS colored by abundance #### 
+  whichSVs <- which(SVs$chrom==chr &
+                      SVs$pass2_ind #& 
+                    #  (SVs$window_StartLowerCI < windows$end[i] |
+                    #  SVs$window_EndUpperCI > windows$start[i])
+  )
+  zoom_region <- GRanges(seqnames = chr, 
+                         ranges = IRanges(start = zoom_start, end = zoom_end))
+  df <- SVs[whichSVs, c("chrom", "start_minus_CI_group", "end_plus_CI_group", "color")]
+  localSVs <- toGRanges(df)
+  kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL,
+                            zoom=zoom_region)
+  kpPlotRegions(kp.chrom, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
+  kpAddBaseNumbers(kp.chrom, tick.dist=(zoom_end-zoom_start)/5, tick.len=7.5, add.units=TRUE, 
+                   units="Mb", minor.tick.dist=(zoom_end-zoom_start)/10, minor.tick.len=5, cex=1)
+  
+  
+  ### Arrows ####
+  remove <- c(which(df$start_minus_CI_group < zoom_start &
+                    df$end_plus_CI_group < zoom_start),
+              which(df$start_minus_CI_group > zoom_end &
+                      df$end_plus_CI_group > zoom_end)
+              )
+  if(length(remove)==0){remove=nrow(df)+1}
+  dim(df[-remove,])
+  
+  if(nrow(df[-remove,])>0){
+    plot(NULL, xlim=c(zoom_start, zoom_end), 
+         ylim=c(0, nrow(df[-remove,])),
+         main=chr, bty="n", yaxt="n", ylab="")
+    arrows(x0=df$start_minus_CI_group[-remove], 
+           x1=df$end_plus_CI_group[-remove],
+           y0=(1:nrow(df[-remove,])), 
+           col=df$color, lwd=2, length=0.05, code=3, angle=90)
+  
+  
+    ### all pass individuals SVS colored by ecotype #### 
+    whichSVs_ind <- which(SVs_ind$chrom==chr &
+                        SVs_ind$pass_ind #& 
+                      #  (SVs$window_StartLowerCI < windows$end[i] |
+                      #  SVs$window_EndUpperCI > windows$start[i])
+    )
+    SVs_ind_chrom <- SVs_ind[whichSVs_ind,]
+    remove_ind <- c(which(SVs_ind_chrom$start_minus_CI_group < zoom_start &
+                        SVs_ind_chrom$end_plus_CI_group < zoom_start),
+                which(SVs_ind_chrom$start_minus_CI_group > zoom_end &
+                        SVs_ind_chrom$end_plus_CI_group > zoom_end)
+    )
+    if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
+    SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
+                                         SVs_ind_chrom$end_plus_CI_group,
+                                         SVs_ind_chrom$pop),]
+    
+    plot(NULL, xlim=c(zoom_start, zoom_end), 
+         ylim=c(0, nrow(SVs_ind_chrom[-remove_ind,])),
+         main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
+    arrows(x0=SVs_ind_chrom$start_minus_CI_group[-remove_ind], 
+           x1=SVs_ind_chrom$end_plus_CI_group[-remove_ind],
+           y0=(1:nrow(SVs_ind_chrom[-remove_ind,])), 
+           lwd=2, length=0.05, code=3, angle=90, 
+           col=SVs_ind_chrom$colorEcotypes[-remove_ind]
+           )
+    
+    
+    ### individuals SVS in pass2 SVs colored by ecotype #### 
+    whichSVs_ind <- which(SVs_ind$chrom==chr &
+                            SVs_ind$pass_ind &
+                            SVs_ind$pass2_ind
+                          #  (SVs$window_StartLowerCI < windows$end[i] |
+                          #  SVs$window_EndUpperCI > windows$start[i])
+    )
+    SVs_ind_chrom <- SVs_ind[whichSVs_ind,]
+    remove_ind <- c(which(SVs_ind_chrom$start_minus_CI_group < zoom_start &
+                            SVs_ind_chrom$end_plus_CI_group < zoom_start),
+                    which(SVs_ind_chrom$start_minus_CI_group > zoom_end &
+                            SVs_ind_chrom$end_plus_CI_group > zoom_end)
+    )
+    if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
+    SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
+                                         SVs_ind_chrom$end_plus_CI_group,
+                                         SVs_ind_chrom$pop),]
+    
+    plot(NULL, xlim=c(zoom_start, zoom_end), 
+         ylim=c(0, nrow(SVs_ind_chrom[-remove_ind,])),
+         main=c(chr, "All pass individuals in pass2 SVs"), bty="l", ylab="")
+    arrows(x0=SVs_ind_chrom$start_minus_CI_group[-remove_ind], 
+           x1=SVs_ind_chrom$end_plus_CI_group[-remove_ind],
+           y0=(1:nrow(SVs_ind_chrom[-remove_ind,])), 
+           lwd=2, length=0.05, code=3, angle=90, 
+           col=SVs_ind_chrom$colorEcotypes[-remove_ind]
+    ) 
+  } # end if
+  
+  
   dev.off()
 }
 
 chromosomes <- levels(as.factor(map$chromosome))
 chromosomes
 
-## Chrom 1
-my_plots(chr = chromosomes[1], zoom_start <- 10*10^6, zoom_end <- 29*10^6,
-         folder="../results-heatmap-otherRanges/")
-my_plots(chr = chromosomes[1], zoom_start <- 12*10^6, zoom_end <- 14*10^6,
-         folder="../results-heatmap-otherRanges/")
-my_plots(chr = chromosomes[1], zoom_start <- 17*10^6, zoom_end <- 20*10^6,
-         folder="../results-heatmap-otherRanges/")
 
-## 
-my_plots(chr = "NC_044051.1", zoom_start <- 17*10^6, zoom_end <- 19*10^6,
-         folder="../results-heatmap-otherRanges/")
+
+## Loop through PCA windows and make plots
+ folder1 = "../results-heatmapsPCAsByMDSOutlier-100windows/"
+for (j in 1:nrow(windows)){
+  print(j)
+    my_plots(windows$chr_num[j], windows$start[j], windows$end[j], folder1, windows$PCAwindowID[j])
+  }
+
+
+# Loop through chromosome level my_plots ### To do
+
+ 
+## Chrom 1 plots ####
+ my_plots( 1, zoom_start <- 0*10^6, zoom_end <- 35*10^6,
+           folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 10*10^6, zoom_end <- 30*10^6,
+          folder="../results-heatmap-otherRanges/")
+  my_plots(1, zoom_start <- 12*10^6, zoom_end <- 14*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 15*10^6, zoom_end <- 22*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 15*10^6, zoom_end <- 16*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 17*10^6, zoom_end <- 19*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 20*10^6, zoom_end <- 22*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 25*10^6, zoom_end <- 28*10^6,
+          folder="../results-heatmap-otherRanges/")
+ my_plots(1, zoom_start <- 28*10^6, zoom_end <- 30*10^6,
+          folder="../results-heatmap-otherRanges/")
+ 
+ 
+  my_plots(chr = "NC_044051.1", zoom_start <- 17*10^6, zoom_end <- 19*10^6,
+          folder="../results-heatmap-otherRanges/")
+ 
