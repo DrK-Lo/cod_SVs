@@ -115,9 +115,6 @@ for(i in 1:length(individuals.names_pop)) {
       #Map the chromosome if they are equal across the two rows
       if(GRIDSSevent.rows[1, ]$seqnames==GRIDSSevent.rows[2, ]$seqnames){
         invGRIDSS.temp$CHROM <- GRIDSSevent.rows[1, ]$seqnames}
-      #Map the sv length if they are equal across the two rows
-      if(is.na(GRIDSSevent.rows[1, ]$svLen&GRIDSSevent.rows[2, ]$svLen) | GRIDSSevent.rows[1, ]$svLen==GRIDSSevent.rows[2, ]$svLen){
-        invGRIDSS.temp$SVLEN <- GRIDSSevent.rows[1, ]$svLen}
       #Map the Filter if they are equal across the two rows
       if(GRIDSSevent.rows[1, ]$FILTER==GRIDSSevent.rows[2, ]$FILTER){
         invGRIDSS.temp$FILTER <- GRIDSSevent.rows[1, ]$FILTER}
@@ -129,6 +126,8 @@ for(i in 1:length(individuals.names_pop)) {
         invGRIDSS.temp$QUAL <- GRIDSSevent.rows[1, ]$QUAL}
       invGRIDSS.temp$PROGRAM <- "GRIDSS"
       invGRIDSS.temp$INDIVIDUAL <- GRIDSSevent.rows[1, ]$INDIVIDUAL
+      #Calculate SVLEN
+      invGRIDSS.temp$SVLEN=invGRIDSS.temp$END_PLUS_CI-invGRIDSS.temp$POS_MINUS_CI
       
       invGRIDSS <- rbind(invGRIDSS, invGRIDSS.temp)
     }
@@ -193,9 +192,6 @@ for(i in 1:length(individuals.names_pop)) {
       #Map the chromosome if they are equal across the two rows
       if(GRIDSSDELLYevent.rows[1, ]$seqnames==GRIDSSDELLYevent.rows[2, ]$seqnames){
         invGRIDSSDELLY.temp$CHROM <- GRIDSSDELLYevent.rows[1, ]$seqnames}
-      #Map the sv length if they are equal across the two rows
-      if(is.na(GRIDSSDELLYevent.rows[1, ]$svLen&GRIDSSDELLYevent.rows[2, ]$svLen) | GRIDSSDELLYevent.rows[1, ]$svLen==GRIDSSDELLYevent.rows[2, ]$svLen){
-        invGRIDSSDELLY.temp$SVLEN <- GRIDSSDELLYevent.rows[1, ]$svLen}
       #Map the Filter if they are equal across the two rows
       if(GRIDSSDELLYevent.rows[1, ]$FILTER==GRIDSSDELLYevent.rows[2, ]$FILTER){
         invGRIDSSDELLY.temp$FILTER <- GRIDSSDELLYevent.rows[1, ]$FILTER}
@@ -207,6 +203,8 @@ for(i in 1:length(individuals.names_pop)) {
         invGRIDSSDELLY.temp$QUAL <- GRIDSSDELLYevent.rows[1, ]$QUAL}
       invGRIDSSDELLY.temp$PROGRAM <- "GRIDSS (DELLY)"
       invGRIDSSDELLY.temp$INDIVIDUAL <- GRIDSSDELLYevent.rows[1, ]$INDIVIDUAL
+      #Calculate SVLEN
+      invGRIDSSDELLY.temp$SVLEN=invGRIDSSDELLY.temp$END_PLUS_CI-invGRIDSSDELLY.temp$POS_MINUS_CI
       
       invGRIDSSDELLY <- rbind(invGRIDSSDELLY, invGRIDSSDELLY.temp)
     }
@@ -229,8 +227,8 @@ invGRIDSSDELLY <- invGRIDSSDELLY[, c(12, 2, 1, 13, 3, 4, 14, 5, 6, 7, 15, 17, 18
 ## PCA Data
 
 ```{r load and format data}
-breakpoints <- read.csv("1-breakpoints.csv") #Read in breakpoints
-RawSamples <- readRDS("2-Samples (3).rds") #Read in the data for all samples in Sara's dataset
+breakpoints <- read.csv("G:/Research/1-breakpoints.csv") #Read in breakpoints
+RawSamples <- readRDS("G:/Research/2-Samples (3).rds") #Read in the data for all samples in Sara's dataset
 #RawSamples <- RawSamples[order(RawSamples$Pop, RawSamples$samp_full),] #reorder the columns based on population and individual 
 
 #Convert the characters into numbers to represent arrangement of inversion
@@ -294,7 +292,7 @@ invFINAL <- rbind(invDelly, invGRIDSS) #Combine DELLY and GRIDSS dataframes
 invFINAL <- rbind(invFINAL, invGRIDSSDELLY) #Add GRIDSS-DELLY dataframe
 invFINAL <- rbind(invFINAL, PCAdata) #Add PCAdata
 
-write.csv(invFINAL, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.csv") #Output to .csv for further use
-write.vcf(invFINAL, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.vcf") #Output to .vcf for samplot
+write.csv(invFINAL, "G:/Research/cod_SVs/outputs/INV-dataset.csv") #Output to .csv for further use
+#write.vcf(invFINAL, "/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset.vcf")
 
 ```
