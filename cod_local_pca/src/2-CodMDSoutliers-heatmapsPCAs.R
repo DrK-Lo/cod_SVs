@@ -147,8 +147,12 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
   gadmor3genome <- toGRanges(gadmor3_df)
   head(gadmor3genome)
 
-
-
+  chromosomes <- levels(as.factor(map$chromosome))
+  chromosomes
+  
+  SVs$start_mid <-  (SVs$start_plus_CI_group+SVs$start_minus_CI_group)/2
+  SVs$end_mid <-  (SVs$end_plus_CI_group+SVs$end_minus_CI_group)/2
+  
 ### SV plotting function with zoom  ####
 my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
   
@@ -158,8 +162,6 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
              chr,"_Chrom-", chr_num, "_windowID-", windowID,
              "_start-", round(zoom_start/10^6,3),"_end-", round(zoom_end/10^6,3),"Mb.pdf"), width=6, height=6)
 
-  
-  chr = chromosomes[chr_num]
   #heatmap and pca
   subSNPs <- which(map$chromosome==chr  & 
                      map$physical.pos > zoom_start &
@@ -197,13 +199,19 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
   )
   zoom_region <- GRanges(seqnames = chr, 
                          ranges = IRanges(start = zoom_start, end = zoom_end))
-  df <- SVs[whichSVs, c("chrom", "start_minus_CI_group", "end_plus_CI_group", "color")]
+  df <- data.frame(chrom=SVs$chrom[whichSVs],
+                   start = (SVs$start_mid[whichSVs]),
+                   end = (SVs$end_mid[whichSVs]),
+                   color=SVs$color[whichSVs])
+  #df <- SVs[whichSVs, c("chrom", "start_minus_CI_group", "end_plus_CI_group", "color")]
   localSVs <- toGRanges(df)
-  kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, chromosome=chr, labels.plotter=NULL,
+  kp.chrom <- plotKaryotype(plot.type=1, genome=gadmor3genome, 
+                            chromosome=chr, labels.plotter=NULL,
                             zoom=zoom_region)
   kpPlotRegions(kp.chrom, data=localSVs, col=localSVs$color, border=darker("#5dade2"), r0=0, r1=1)
-  kpAddBaseNumbers(kp.chrom, tick.dist=(zoom_end-zoom_start)/5, tick.len=7.5, add.units=TRUE, 
-                   units="Mb", minor.tick.dist=(zoom_end-zoom_start)/10, minor.tick.len=5, cex=1)
+  kpAddBaseNumbers(kp.chrom, tick.dist=(zoom_end-zoom_start)/10, tick.len=7.5, add.units=TRUE, 
+                   units="Mb", minor.tick.dist=(zoom_end-zoom_start)/20, 
+                   minor.tick.len=5, cex=0.7)
   
   
   
@@ -224,21 +232,27 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
     if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
     SVs_ind_chrom <- SVs_ind_chrom[-remove_ind,]
     nrow(SVs_ind_chrom)
-    SVs_ind_chrom
+    #SVs_ind_chrom
     if(nrow(SVs_ind_chrom)>0){
         SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
                                              SVs_ind_chrom$end_plus_CI_group,
                                              SVs_ind_chrom$pop),]
         
-        plot(NULL, xlim=c(zoom_start, zoom_end), 
+        plot(NULL, xlim=c(zoom_start, zoom_end)/10^6, 
              ylim=c(0, nrow(SVs_ind_chrom)),
              main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
-        arrows(x0=SVs_ind_chrom$start_minus_CI_group, 
-               x1=SVs_ind_chrom$end_plus_CI_group,
+        arrows(x0=SVs_ind_chrom$start_minus_CI_group/10^6, 
+               x1=SVs_ind_chrom$end_plus_CI_group/10^6,
+               y0=(1:nrow(SVs_ind_chrom)), 
+               lwd=2, length=0.05, code=3, angle=90, 
+               col=adjustcolor(SVs_ind_chrom$colorEcotypes, alpha=0.1)
+               )
+        arrows(x0=SVs_ind_chrom$start_plus_CI_group/10^6, 
+               x1=SVs_ind_chrom$end_minus_CI_group/10^6,
                y0=(1:nrow(SVs_ind_chrom)), 
                lwd=2, length=0.05, code=3, angle=90, 
                col=SVs_ind_chrom$colorEcotypes
-               )
+        )
         
     }    
         ### individuals SVS in pass2 SVs colored by ecotype #### 
@@ -260,23 +274,37 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
                                              SVs_ind_chrom$end_plus_CI_group,
                                              SVs_ind_chrom$pop),]
    if(nrow(SVs_ind_chrom)>0){  
-        plot(NULL, xlim=c(zoom_start, zoom_end), 
+        plot(NULL, xlim=c(zoom_start, zoom_end)/10^6, 
              ylim=c(0, nrow(SVs_ind_chrom)),
              main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
-        arrows(x0=SVs_ind_chrom$start_minus_CI_group, 
-               x1=SVs_ind_chrom$end_plus_CI_group,
-               y0=(1:nrow(SVs_ind_chrom)), 
-               lwd=2, length=0.05, code=3, angle=90, 
-               col=SVs_ind_chrom$colorEcotypes
-        )
+     arrows(x0=SVs_ind_chrom$start_minus_CI_group/10^6, 
+            x1=SVs_ind_chrom$end_plus_CI_group/10^6,
+            y0=(1:nrow(SVs_ind_chrom)), 
+            lwd=2, length=0.05, code=3, angle=90, 
+            col=adjustcolor(SVs_ind_chrom$colorEcotypes, alpha=0.1)
+     )
+     arrows(x0=SVs_ind_chrom$start_plus_CI_group/10^6, 
+            x1=SVs_ind_chrom$end_minus_CI_group/10^6,
+            y0=(1:nrow(SVs_ind_chrom)), 
+            lwd=2, length=0.05, code=3, angle=90, 
+            col=SVs_ind_chrom$colorEcotypes
+     )
+        
     }# end if
   dev.off()
 } # end myplot
 
-chromosomes <- levels(as.factor(map$chromosome))
-chromosomes
 
-
+# Loop through chromosome level my_plots ###
+  head(gadmor3_df)
+  for (i in 1:nrow(gadmor3_df)){
+    print(i)
+    my_plots(chr_num = i, 
+             zoom_start=0, 
+             zoom_end=round(gadmor3_df$end[i], digits=-7)+1e06, 
+             folder="../results-heatmapPCAs-chrom/", 
+             windowID="")
+  }
 
 ## Loop through PCA windows and make plots #### 
 ## no need to rerun
@@ -291,16 +319,7 @@ for (j in 1:nrow(windows)){
   }
 
 
-# Loop through chromosome level my_plots ### To do
-head(gadmor3_df)
-for (i in 1:nrow(gadmor3_df)){
-  print(i)
-  my_plots(chr_num = i, 
-           zoom_start=0, 
-           zoom_end=gadmor3_df$end[i]+1e06, 
-           folder="../results-heatmapPCAs-chrom/", 
-           windowID="")
-}
+
  
 ## Chrom 1 plots ####
  my_plots(1, zoom_start <- 10*10^6, zoom_end <- 30*10^6,

@@ -48,8 +48,8 @@ summary(inv$maxSize)
 
 ### REvmove inversions less than 50 bp ####
 hist(log10(inv$maxSize), breaks=seq(0,8,by=0.1))
-sum(inv$maxSize<50, na.rm=TRUE)
-inv = inv[-which(inv$maxSize<50),]
+sum(inv$maxSize<100, na.rm=TRUE)
+inv = inv[-which(inv$maxSize<100),]
 hist(log10(inv$maxSize), breaks=seq(0,8,by=0.1))
 
 # study CI ####
