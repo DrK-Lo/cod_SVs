@@ -4,7 +4,7 @@
 library(dplyr)
 library(tidyr)
 
-setwd("/Users/k.lotterhos/Documents/GitHub/cod_SVs/consolidatev2/src")
+#setwd("/Users/k.lotterhos/Documents/GitHub/cod_SVs/consolidatev2/src")
 inv <- read.csv("../../outputs/INV-dataset.csv")
 head(inv)
 dim(inv)
