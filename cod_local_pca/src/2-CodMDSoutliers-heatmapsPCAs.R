@@ -83,7 +83,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
     SVs <- SVs[order(SVs$chrom, SVs$start_minus_CI_group, SVs$end_plus_CI_group),]
   
   ## Add color by number of individuals and print legend ####
-  color_endpoints <- c(grey(0.95), "#5dade2", "black")
+  color_endpoints <- c(grey(0.95), "#5dade2", "darkblue")
   #SVs$color <- colByValue(SVs$n_ind_invID, colors = c(color_endpoints)) # old code
   SVs$color <- colByValue(SVs$n_PASS_ind, 
                           colors = c(color_endpoints), min=0, max=294)
@@ -149,7 +149,7 @@ my_snps <- snp_attach("~/Desktop/codGenotypeData/merged.f.99ind.MAF05.rds")
 
 
 
-### SV plotting function with zoom  
+### SV plotting function with zoom  ####
 my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
   
   chr <- chromosomes[chr_num]
@@ -206,24 +206,6 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
                    units="Mb", minor.tick.dist=(zoom_end-zoom_start)/10, minor.tick.len=5, cex=1)
   
   
-  ### Arrows ####
-  remove <- c(which(df$start_minus_CI_group < zoom_start &
-                    df$end_plus_CI_group < zoom_start),
-              which(df$start_minus_CI_group > zoom_end &
-                      df$end_plus_CI_group > zoom_end)
-              )
-  if(length(remove)==0){remove=nrow(df)+1}
-  dim(df[-remove,])
-  
-  if(nrow(df[-remove,])>0){
-    plot(NULL, xlim=c(zoom_start, zoom_end), 
-         ylim=c(0, nrow(df[-remove,])),
-         main=chr, bty="n", yaxt="n", ylab="")
-    arrows(x0=df$start_minus_CI_group[-remove], 
-           x1=df$end_plus_CI_group[-remove],
-           y0=(1:nrow(df[-remove,])), 
-           col=df$color, lwd=2, length=0.05, code=3, angle=90)
-  
   
     ### all pass individuals SVS colored by ecotype #### 
     whichSVs_ind <- which(SVs_ind$chrom==chr &
@@ -232,59 +214,64 @@ my_plots <- function(chr_num, zoom_start, zoom_end, folder, windowID=""){
                       #  SVs$window_EndUpperCI > windows$start[i])
     )
     SVs_ind_chrom <- SVs_ind[whichSVs_ind,]
+    nrow(SVs_ind_chrom)
     remove_ind <- c(which(SVs_ind_chrom$start_minus_CI_group < zoom_start &
                         SVs_ind_chrom$end_plus_CI_group < zoom_start),
                 which(SVs_ind_chrom$start_minus_CI_group > zoom_end &
                         SVs_ind_chrom$end_plus_CI_group > zoom_end)
     )
+    length(remove_ind)
     if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
-    SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
-                                         SVs_ind_chrom$end_plus_CI_group,
-                                         SVs_ind_chrom$pop),]
-    
-    plot(NULL, xlim=c(zoom_start, zoom_end), 
-         ylim=c(0, nrow(SVs_ind_chrom[-remove_ind,])),
-         main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
-    arrows(x0=SVs_ind_chrom$start_minus_CI_group[-remove_ind], 
-           x1=SVs_ind_chrom$end_plus_CI_group[-remove_ind],
-           y0=(1:nrow(SVs_ind_chrom[-remove_ind,])), 
-           lwd=2, length=0.05, code=3, angle=90, 
-           col=SVs_ind_chrom$colorEcotypes[-remove_ind]
-           )
-    
-    
-    ### individuals SVS in pass2 SVs colored by ecotype #### 
-    whichSVs_ind <- which(SVs_ind$chrom==chr &
-                            SVs_ind$pass_ind &
-                            SVs_ind$pass2_ind
-                          #  (SVs$window_StartLowerCI < windows$end[i] |
-                          #  SVs$window_EndUpperCI > windows$start[i])
-    )
-    SVs_ind_chrom <- SVs_ind[whichSVs_ind,]
-    remove_ind <- c(which(SVs_ind_chrom$start_minus_CI_group < zoom_start &
-                            SVs_ind_chrom$end_plus_CI_group < zoom_start),
-                    which(SVs_ind_chrom$start_minus_CI_group > zoom_end &
-                            SVs_ind_chrom$end_plus_CI_group > zoom_end)
-    )
-    if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
-    SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
-                                         SVs_ind_chrom$end_plus_CI_group,
-                                         SVs_ind_chrom$pop),]
-    
-    plot(NULL, xlim=c(zoom_start, zoom_end), 
-         ylim=c(0, nrow(SVs_ind_chrom[-remove_ind,])),
-         main=c(chr, "All pass individuals in pass2 SVs"), bty="l", ylab="")
-    arrows(x0=SVs_ind_chrom$start_minus_CI_group[-remove_ind], 
-           x1=SVs_ind_chrom$end_plus_CI_group[-remove_ind],
-           y0=(1:nrow(SVs_ind_chrom[-remove_ind,])), 
-           lwd=2, length=0.05, code=3, angle=90, 
-           col=SVs_ind_chrom$colorEcotypes[-remove_ind]
-    ) 
-  } # end if
-  
-  
+    SVs_ind_chrom <- SVs_ind_chrom[-remove_ind,]
+    nrow(SVs_ind_chrom)
+    SVs_ind_chrom
+    if(nrow(SVs_ind_chrom)>0){
+        SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
+                                             SVs_ind_chrom$end_plus_CI_group,
+                                             SVs_ind_chrom$pop),]
+        
+        plot(NULL, xlim=c(zoom_start, zoom_end), 
+             ylim=c(0, nrow(SVs_ind_chrom)),
+             main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
+        arrows(x0=SVs_ind_chrom$start_minus_CI_group, 
+               x1=SVs_ind_chrom$end_plus_CI_group,
+               y0=(1:nrow(SVs_ind_chrom)), 
+               lwd=2, length=0.05, code=3, angle=90, 
+               col=SVs_ind_chrom$colorEcotypes
+               )
+        
+    }    
+        ### individuals SVS in pass2 SVs colored by ecotype #### 
+        whichSVs_ind <- which(SVs_ind$chrom==chr &
+                                SVs_ind$pass_ind &
+                                SVs_ind$pass2_ind
+                              #  (SVs$window_StartLowerCI < windows$end[i] |
+                              #  SVs$window_EndUpperCI > windows$start[i])
+        )
+        SVs_ind_chrom <- SVs_ind[whichSVs_ind,]
+        remove_ind <- c(which(SVs_ind_chrom$start_minus_CI_group < zoom_start &
+                                SVs_ind_chrom$end_plus_CI_group < zoom_start),
+                        which(SVs_ind_chrom$start_minus_CI_group > zoom_end &
+                                SVs_ind_chrom$end_plus_CI_group > zoom_end)
+        )
+        if(length(remove_ind)==0){remove_ind=nrow(SVs_ind_chrom)+1}
+        SVs_ind_chrom <- SVs_ind_chrom[-remove_ind,]
+        SVs_ind_chrom <- SVs_ind_chrom[order(SVs_ind_chrom$start_minus_CI_group,
+                                             SVs_ind_chrom$end_plus_CI_group,
+                                             SVs_ind_chrom$pop),]
+   if(nrow(SVs_ind_chrom)>0){  
+        plot(NULL, xlim=c(zoom_start, zoom_end), 
+             ylim=c(0, nrow(SVs_ind_chrom)),
+             main=c(chr, "All pass individuals in pass1 SVs"), bty="l", ylab="")
+        arrows(x0=SVs_ind_chrom$start_minus_CI_group, 
+               x1=SVs_ind_chrom$end_plus_CI_group,
+               y0=(1:nrow(SVs_ind_chrom)), 
+               lwd=2, length=0.05, code=3, angle=90, 
+               col=SVs_ind_chrom$colorEcotypes
+        )
+    }# end if
   dev.off()
-}
+} # end myplot
 
 chromosomes <- levels(as.factor(map$chromosome))
 chromosomes
@@ -296,16 +283,26 @@ chromosomes
  folder1 = "../results-heatmapsPCAsByMDSOutlier-100windows/"
 for (j in 1:nrow(windows)){
   print(j)
-    my_plots(windows$chr_num[j], windows$start[j], windows$end[j], folder1, windows$PCAwindowID[j])
+    my_plots(chr_num = windows$chr_num[j], 
+             zoom_start=windows$start[j], 
+             zoom_end=windows$end[j], 
+             folder=folder1, 
+             windowID=windows$PCAwindowID[j])
   }
 
 
 # Loop through chromosome level my_plots ### To do
-
+head(gadmor3_df)
+for (i in 1:nrow(gadmor3_df)){
+  print(i)
+  my_plots(chr_num = i, 
+           zoom_start=0, 
+           zoom_end=gadmor3_df$end[i]+1e06, 
+           folder="../results-heatmapPCAs-chrom/", 
+           windowID="")
+}
  
 ## Chrom 1 plots ####
- my_plots( 1, zoom_start <- 0*10^6, zoom_end <- 35*10^6,
-           folder="../results-heatmap-otherRanges/")
  my_plots(1, zoom_start <- 10*10^6, zoom_end <- 30*10^6,
           folder="../results-heatmap-otherRanges/")
   my_plots(1, zoom_start <- 12*10^6, zoom_end <- 14*10^6,
