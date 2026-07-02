@@ -10,12 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 
-INV <- read.csv("~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/INV-dataset_ConsolidationMethod1.5_unique-filtered.csv") #Unique inversion dataset
-  chrom1 <- INV[INV$Chrom == "NC_044048.1",]
-  chrom2 <- INV[INV$Chrom == "NC_044049.1",]
-  chrom7 <- INV[INV$Chrom == "NC_044054.1",]
-  chrom12 <- INV[INV$Chrom == "NC_044059.1",]
-PCA <- read.csv("~/Undergrad/NortheasternUniversity/Research/cod_SVs/outputs/PCA.csv") #PCA dataset
+INV <- read.csv("G:/Research/cod_SVs/consolidatev2/data_outputs/INV-dataset-ConsensusID_unique.csv") #Unique inversion dataset
+INV.pass1 <- INV[INV$pass1==TRUE,]
+  chrom1 <- INV.pass1[INV.pass1$chrom == "NC_044048.1",]
+  chrom2 <- INV.pass1[INV.pass1$chrom == "NC_044049.1",]
+  chrom7 <- INV.pass1[INV.pass1$chrom == "NC_044054.1",]
+  chrom12 <- INV.pass1[INV.pass1$chrom == "NC_044059.1",]
+PCA <- read.csv("G:/Research/cod_SVs/outputs/PCA.csv") #PCA dataset
   for(i in 1:NROW(PCA)){
      if(substr(PCA$ID[i],1,3) == "GoM"){
      PCA$ECOTYPE[i] <- "Gulf-of-Maine"
@@ -51,25 +52,25 @@ pca.size <- c((28292263-11299038), (4466546-481246), (26336501-16828712), (13690
 lostruct.size <- c((28828695-11064526), (4475015-436764), (26854568-16120084), (17892869-290637)) #calculate size based on start and end locations
 
 ###Chrom1
-chrom1$Size_Pass <- ((chrom1$invSizeMax)/pca.size[1]) >=0.5 & ((chrom1$invSizeMax)/pca.size[1])<=1.5 | ((chrom1$invSizeMax)/lostruct.size[1]) >=0.5 & ((chrom1$invSizeMax)/lostruct.size[1])<=1.5
-    print(chrom1[chrom1$Size_Pass=="TRUE", "InversionID"]) #IDs of consensus inversions that align with the size criteria
+chrom1$Size_Pass <- ((chrom1$maxSize)/pca.size[1]) >=0.5 & ((chrom1$maxSize)/pca.size[1])<=1.5 | ((chrom1$maxSize)/lostruct.size[1]) >=0.5 & ((chrom1$maxSize)/lostruct.size[1])<=1.5
+    print(chrom1[chrom1$Size_Pass=="TRUE", "ConsensusID"]) #IDs of consensus inversions that align with the size criteria
 ###Chrom2
-chrom2$Size_Pass <- ((chrom2$invSizeMax)/pca.size[2]) >=0.5 & ((chrom2$invSizeMax)/pca.size[2])<=1.5 | ((chrom2$invSizeMax)/lostruct.size[2]) >=0.5 & ((chrom2$invSizeMax)/lostruct.size[2])<=1.5
-    print(chrom2[chrom2$Size_Pass=="TRUE", "InversionID"]) #IDs of consensus inversions that align with the size criteria
+chrom2$Size_Pass <- ((chrom2$maxSize)/pca.size[2]) >=0.5 & ((chrom2$maxSize)/pca.size[2])<=1.5 | ((chrom2$maxSize)/lostruct.size[2]) >=0.5 & ((chrom2$maxSize)/lostruct.size[2])<=1.5
+    print(chrom2[chrom2$Size_Pass=="TRUE", "ConsensusID"]) #IDs of consensus inversions that align with the size criteria
 ###Chrom7
-chrom7$Size_Pass <- ((chrom7$invSizeMax)/pca.size[3]) >=0.5 & ((chrom7$invSizeMax)/pca.size[3])<=1.5 | ((chrom7$invSizeMax)/lostruct.size[3]) >=0.5 & ((chrom7$invSizeMax)/lostruct.size[3])<=1.5
-    print(chrom7[chrom7$Size_Pass=="TRUE", "InversionID"])
+chrom7$Size_Pass <- ((chrom7$maxSize)/pca.size[3]) >=0.5 & ((chrom7$maxSize)/pca.size[3])<=1.5 | ((chrom7$maxSize)/lostruct.size[3]) >=0.5 & ((chrom7$maxSize)/lostruct.size[3])<=1.5
+    print(chrom7[chrom7$Size_Pass=="TRUE", "ConsensusID"])
 ###Chrom12
-chrom12$Size_Pass <- ((chrom12$invSizeMax)/pca.size[4]) >=0.5 & ((chrom12$invSizeMax)/pca.size[4])<=1.5 | ((chrom12$invSizeMax)/lostruct.size[4]) >=0.5 & ((chrom12$invSizeMax)/lostruct.size[4])<=1.5
-    print(chrom12[chrom12$Size_Pass=="TRUE", "InversionID"])  
+chrom12$Size_Pass <- ((chrom12$maxSize)/pca.size[4]) >=0.5 & ((chrom12$maxSize)/pca.size[4])<=1.5 | ((chrom12$maxSize)/lostruct.size[4]) >=0.5 & ((chrom12$maxSize)/lostruct.size[4])<=1.5
+    print(chrom12[chrom12$Size_Pass=="TRUE", "ConsensusID"])  
     
     
     
-    ###Chrom1 Partial INVs
-  chrom1$INV1_Size_Pass <- (chrom1$invSizeMax <= ((17790000-9966000)+((17790000-9966000)*0.1)) & chrom1$invSizeMax >= ((17790000-9966000)-((17790000-9966000)*0.1))) | (INV.chrom1$invSizeMax <= ((18425009-10782691)+((18425009-10782691)*0.1)) & INV.chrom1$invSizeMax >= ((18425009-10782691)-((18425009-10782691)*0.1)))
-    print(INV.chrom1[INV.chrom1$INV1_Size_Pass=="TRUE", "InversionID"])
-  INV.chrom1$INV2_Size_Pass <- (INV.chrom1$invSizeMax <= ((27341000-17790000)+((27341000-17790000)*0.1)) & INV.chrom1$invSizeMax >= ((27341000-17790000)-((27341000-17790000)*0.1))) | (INV.chrom1$invSizeMax <= ((28228130-18425009)+((28228130-18425009)*0.1)) & INV.chrom1$invSizeMax >= ((28228130-18425009)-((28228130-18425009)*0.1)))
-  print(INV.chrom1[INV.chrom1$INV2_Size_Pass=="TRUE", "InversionID"])
+     ###Chrom1 Partial INVs
+  # chrom1$INV1_Size_Pass <- (chrom1$invSizeMax <= ((17790000-9966000)+((17790000-9966000)*0.1)) & chrom1$invSizeMax >= ((17790000-9966000)-((17790000-9966000)*0.1))) | (INV.chrom1$invSizeMax <= ((18425009-10782691)+((18425009-10782691)*0.1)) & INV.chrom1$invSizeMax >= ((18425009-10782691)-((18425009-10782691)*0.1)))
+  #   print(INV.chrom1[INV.chrom1$INV1_Size_Pass=="TRUE", "InversionID"])
+  # INV.chrom1$INV2_Size_Pass <- (INV.chrom1$invSizeMax <= ((27341000-17790000)+((27341000-17790000)*0.1)) & INV.chrom1$invSizeMax >= ((27341000-17790000)-((27341000-17790000)*0.1))) | (INV.chrom1$invSizeMax <= ((28228130-18425009)+((28228130-18425009)*0.1)) & INV.chrom1$invSizeMax >= ((28228130-18425009)-((28228130-18425009)*0.1)))
+  # print(INV.chrom1[INV.chrom1$INV2_Size_Pass=="TRUE", "InversionID"])
 
 
 ```
@@ -78,154 +79,106 @@ chrom12$Size_Pass <- ((chrom12$invSizeMax)/pca.size[4]) >=0.5 & ((chrom12$invSiz
 
 ```{r}
 ##Inversion locations overlap by >70%
+pca.start <- c(11299038, 481246, 16828712, 1809214)
+lostruct.start <- c(11064526, 436764, 16120084, 290637)
+pca.end <- c(28292263, 4466546, 26336501, 13690550)
+lostruct.end <- c(28828695, 4475015, 26854568, 17892869)
 
 ###Chrom 1
-chrom1$Location_Pass <- abs((chrom1$window_EndUpperCI-chrom1$window_StartLowerCI)/(pmin(chrom1$window_StartLowerCI,11299038)-pmax(chrom1$window_EndUpperCI,28292263)))>=0.7
+chrom1$Location_Pass <- abs((pca.end[1]-pca.start[1])/(pmin(chrom1$start_minus_CI_group,pca.start[1])-pmax(chrom1$end_plus_CI_group,pca.end[1])))>=0.7 | abs((lostruct.end[1]-lostruct.start[1])/(pmin(chrom1$start_minus_CI_group,lostruct.start[1])-pmax(chrom1$end_plus_CI_group,lostruct.end[1])))>=0.7
 ###Chrom 2
-chrom2$Location_Pass <- abs((chrom2$window_EndUpperCI-chrom2$window_StartLowerCI)/(pmin(chrom2$window_StartLowerCI,481246)-pmax(chrom2$window_EndUpperCI,4466546)))>=0.7 #True INV
+chrom2$Location_Pass <- abs((pca.end[2]-pca.start[2])/(pmin(chrom2$start_minus_CI_group,pca.start[2])-pmax(chrom2$end_plus_CI_group,pca.end[2])))>=0.7 | abs((lostruct.end[2]-lostruct.start[2])/(pmin(chrom2$start_minus_CI_group,lostruct.start[2])-pmax(chrom2$end_plus_CI_group,lostruct.end[2])))>=0.7
 ###Chrom 7
-chrom7$Location_Pass <- abs((chrom7$window_EndUpperCI-chrom7$window_StartLowerCI)/(pmin(chrom7$window_StartLowerCI,16828712)-pmax(chrom7$window_EndUpperCI,26336501)))>=0.7
+chrom7$Location_Pass <- abs((pca.end[3]-pca.start[3])/(pmin(chrom7$start_minus_CI_group,pca.start[3])-pmax(chrom7$end_plus_CI_group,pca.end[3])))>=0.7 | abs((lostruct.end[3]-lostruct.start[3])/(pmin(chrom7$start_minus_CI_group,lostruct.start[3])-pmax(chrom7$end_plus_CI_group,lostruct.end[3])))>=0.7
 ###Chrom 12
-chrom12$Location_Pass <- abs((chrom12$window_EndUpperCI-chrom12$window_StartLowerCI)/(pmin(chrom12$window_StartLowerCI,1809214)-pmax(chrom12$window_EndUpperCI,13690550)))>=0.7
-
-
+chrom12$Location_Pass <- abs((pca.end[4]-pca.start[4])/(pmin(chrom12$start_minus_CI_group,pca.start[4])-pmax(chrom12$end_plus_CI_group,pca.end[4])))>=0.7 | abs((lostruct.end[4]-lostruct.start[4])/(pmin(chrom12$start_minus_CI_group,lostruct.start[4])-pmax(chrom12$end_plus_CI_group,lostruct.end[4])))>=0.7
 
 
 
   ###Chrom 1 Partial INVs
-  INV.chrom1$INV1_Location_Pass <- abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,9966000)-pmax(INV.chrom1$window_EndUpperCI,17790000)))>=0.7 |
-    abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,10782691)-pmax(INV.chrom1$window_EndUpperCI,18425009)))>=0.7
-  INV.chrom1$INV2_Location_Pass <- abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,17790000)-pmax(INV.chrom1$window_EndUpperCI,27341000)))>=0.7 |
-    abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,18425009)-pmax(INV.chrom1$window_EndUpperCI,28228130)))>=0.7
+  # INV.chrom1$INV1_Location_Pass <- abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,9966000)-pmax(INV.chrom1$window_EndUpperCI,17790000)))>=0.7 |
+  #   abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,10782691)-pmax(INV.chrom1$window_EndUpperCI,18425009)))>=0.7
+  # INV.chrom1$INV2_Location_Pass <- abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,17790000)-pmax(INV.chrom1$window_EndUpperCI,27341000)))>=0.7 |
+  #   abs((INV.chrom1$window_EndUpperCI-INV.chrom1$window_StartLowerCI)/(pmin(INV.chrom1$window_StartLowerCI,18425009)-pmax(INV.chrom1$window_EndUpperCI,28228130)))>=0.7
 ```
 
 ```{r}
 ##Print the inversion IDs where both conditions are true
 
 ###Chrom 1
-print(chrom1[chrom1$Size_Pass=="TRUE" & chrom1$Location_Pass=="TRUE", "InversionID"])
+chrom1$SV_Det <- chrom1$Size_Pass=="TRUE" & chrom1$Location_Pass=="TRUE"
 ###Chrom 2
-print(chrom2[chrom2$Size_Pass=="TRUE" & chrom2$Location_Pass=="TRUE", "InversionID"])
+chrom2$SV_Det <- chrom2$Size_Pass=="TRUE" & chrom2$Location_Pass=="TRUE"
 ###Chrom 7
-print(chrom7[chrom7$Size_Pass=="TRUE" & chrom7$Location_Pass=="TRUE", "InversionID"])
+chrom7$SV_Det <- chrom7$Size_Pass=="TRUE" & chrom7$Location_Pass=="TRUE"
 ###Chrom 12
-print(chrom12[chrom12$Size_Pass=="TRUE" & chrom12$Location_Pass=="TRUE", "InversionID"])
+chrom12$SV_Det <- chrom12$Size_Pass=="TRUE" & chrom12$Location_Pass=="TRUE"
 
 
 #INV1a and 1b
-print(INV.chrom1[INV.chrom1$INV1_Size_Pass=="TRUE" & INV.chrom1$INV1_Location_Pass=="TRUE", "InversionID"])
-print(INV.chrom1[INV.chrom1$INV2_Size_Pass=="TRUE" & INV.chrom1$INV2_Location_Pass=="TRUE", "InversionID"])
+# print(INV.chrom1[INV.chrom1$INV1_Size_Pass=="TRUE" & INV.chrom1$INV1_Location_Pass=="TRUE", "InversionID"])
+# print(INV.chrom1[INV.chrom1$INV2_Size_Pass=="TRUE" & INV.chrom1$INV2_Location_Pass=="TRUE", "InversionID"])
 ```
 
 ## Identify individuals with the validated Inversion IDs
 
 ```{r}
-INVind <- read.csv("/projects/lotterhos/2020_CodGenomes_Inversions/outputs/INV-dataset_ConsolidationMethod1.5_filtered.csv")
-  INVind$MergeID <- paste(INVind$InversionID, INVind$Individual, sep="_")
-  INVind <- INVind[!duplicated(INVind[c('MergeID')]), ]
-INVind$Pop_Individual <- INVind$Individual
-INVind$Individual <- as.integer(substr(INVind$Individual, 6, 10)) #Match 'Individual' column to PCA format
-  chom1.INVind <- INVind[INVind$Chrom == "NC_044048.1",]
-  chom2.INVind <- INVind[INVind$Chrom == "NC_044049.1",]
-  chom7.INVind <- INVind[INVind$Chrom == "NC_044054.1",]
-  chom12.INVind <- INVind[INVind$Chrom == "NC_044059.1",]
-
+INVind <- read.csv("G:/Research/cod_SVs/consolidatev2/data_outputs/INV-dataset-ConsensusID-Ind-Filtered.csv")
+  chrom1.INVind <- INVind[INVind$chrom == "NC_044048.1", c("ConsensusID", "samp_full", "pop.names", "INDIVIDUAL", "chrom", "LG1cluster_nameB")]
+  chrom2.INVind <- INVind[INVind$chrom == "NC_044049.1",c("ConsensusID", "samp_full", "pop.names", "INDIVIDUAL", "chrom", "LG2cluster_nameB")]
+  chrom7.INVind <- INVind[INVind$chrom == "NC_044054.1",c("ConsensusID", "samp_full", "pop.names", "INDIVIDUAL", "chrom", "LG7cluster_nameB")]
+  chrom12.INVind <- INVind[INVind$chrom == "NC_044059.1",c("ConsensusID", "samp_full", "pop.names", "INDIVIDUAL", "chrom", "LG12cluster_nameB")]
+  
 ###Chrom1
-####Add a column indicating if the individual has the inversion in the PCA data
-chom1.INVind <- left_join(chom1.INVind, chrom1.PCA, by=join_by("Chrom"=="CHROM", "Individual"=="INDIVIDUAL"))
-  chom1.INVind <- rename(chom1.INVind, SV_GT = "GT.x", PCA_GT = "GT.y")
-####Add column indicating if the InversionID matches
-chom1.INVind$ID_PASS <- chom1.INVind$InversionID=='162-616' | 
-  chom1.INVind$InversionID=='162-627' | 
-  chom1.INVind$InversionID=='162-577' | 
-  chom1.INVind$InversionID=='162-610' | 
-  chom1.INVind$InversionID=='162-559' | 
-  chom1.INVind$InversionID=='162-575' |
-  chom1.INVind$InversionID=='162-582' |
-  chom1.INVind$InversionID=='188-597'
+chrom1.INVind <- left_join(chrom1.INVind, chrom1.PCA, by=join_by("chrom"=="CHROM", "samp_full"=="INDIVIDUAL"))
+chrom1.INVind <- left_join(chrom1.INVind, chrom1[,c("ConsensusID", "Size_Pass", "Location_Pass", "SV_Det")], by=join_by("ConsensusID"))
+chrom1.INVind$PCA_Match <- chrom1.INVind$PCA_PRESENT=="TRUE" & chrom1.INVind$SV_Det=="TRUE"
+
 ###Chrom2
 ####Add a column indicating if the individual has the inversion in the PCA data
-INV.indiv.chrom2 <- left_join(INV.indiv.chrom2, INV.pca_chrom2, by=join_by("Chrom"=="CHROM", "Individual"=="INDIVIDUAL"))
-  INV.indiv.chrom2 <- rename(INV.indiv.chrom2, SV_GT = "GT.x", PCA_GT = "GT.y")
-####Add column indicating if the InversionID matches
-INV.indiv.chrom2$Location1_ID_PASS <- INV.indiv.chrom2$InversionID=='848-888'
-INV.indiv.chrom2$Location2_ID_PASS <- INV.indiv.chrom2$InversionID=='1382-1441'
+chrom2.INVind <- left_join(chrom2.INVind, chrom2.PCA, by=join_by("chrom"=="CHROM", "samp_full"=="INDIVIDUAL"))
+chrom2.INVind <- left_join(chrom2.INVind, chrom2[,c("ConsensusID", "Size_Pass", "Location_Pass", "SV_Det")], by=join_by("ConsensusID"))
+chrom2.INVind$PCA_Match <- chrom2.INVind$PCA_PRESENT=="TRUE" & chrom2.INVind$SV_Det=="TRUE"
 
 ###Chrom7
-####Add a column indicating if the individual has the inversion in the PCA data
-INV.indiv.chrom7 <- left_join(INV.indiv.chrom7, INV.pca_chrom7, by=join_by("Chrom"=="CHROM", "Individual"=="INDIVIDUAL"))
-  INV.indiv.chrom7 <- rename(INV.indiv.chrom7, SV_GT = "GT.x", PCA_GT = "GT.y")
-####Add column indicating if the InversionID matches
-INV.indiv.chrom7$ID_PASS <- INV.indiv.chrom7$InversionID=='5088-5159' |
-  INV.indiv.chrom7$InversionID=='5091-5162' 
+chrom7.INVind <- left_join(chrom7.INVind, chrom7.PCA, by=join_by("chrom"=="CHROM", "samp_full"=="INDIVIDUAL"))
+chrom7.INVind <- left_join(chrom7.INVind, chrom7[,c("ConsensusID", "Size_Pass", "Location_Pass", "SV_Det")], by=join_by("ConsensusID"))
+chrom7.INVind$PCA_Match <- chrom7.INVind$PCA_PRESENT=="TRUE" & chrom7.INVind$SV_Det=="TRUE"
 
 ###Chrom12
-####Add a column indicating if the individual has the inversion in the PCA data
-INV.indiv.chrom12 <- left_join(INV.indiv.chrom12, INV.pca_chrom12, by=join_by("Chrom"=="CHROM", "Individual"=="INDIVIDUAL"))
-  INV.indiv.chrom12 <- rename(INV.indiv.chrom12, SV_GT = "GT.x", PCA_GT = "GT.y")
-####Add column indicating if the InversionID matches
-INV.indiv.chrom12$ID_PASS <- INV.indiv.chrom12$InversionID=='8322-8401' |
-  INV.indiv.chrom12$InversionID=='8340-8415' |
-  INV.indiv.chrom12$InversionID=='8467-8424' 
-
+chrom12.INVind <- left_join(chrom12.INVind, chrom12.PCA, by=join_by("chrom"=="CHROM", "samp_full"=="INDIVIDUAL"))
+chrom12.INVind <- left_join(chrom12.INVind, chrom12[,c("ConsensusID", "Size_Pass", "Location_Pass", "SV_Det")], by=join_by("ConsensusID"))
+chrom12.INVind$PCA_Match <- chrom12.INVind$PCA_PRESENT=="TRUE" & chrom12.INVind$SV_Det=="TRUE"
 
 
   ###Chrom 1 Partial INVs
-INV.indiv.chrom1$INV1_ID_PASS <- INV.indiv.chrom1$InversionID=='339-500'
-INV.indiv.chrom1$INV2_ID_PASS <- INV.indiv.chrom1$InversionID=='571-763' | 
-  INV.indiv.chrom1$InversionID=='571-768' | 
-  INV.indiv.chrom1$InversionID=='571-777'
+# INV.indiv.chrom1$INV1_ID_PASS <- INV.indiv.chrom1$InversionID=='339-500'
+# INV.indiv.chrom1$INV2_ID_PASS <- INV.indiv.chrom1$InversionID=='571-763' | 
+#   INV.indiv.chrom1$InversionID=='571-768' | 
+#   INV.indiv.chrom1$InversionID=='571-777'
 ```
 
-## Generate Comparison Tables - INV TRUE IN SV
 
-```{r}
-###Chrom1
-table(INV.indiv.chrom1[INV.indiv.chrom1$DoubleINV_ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "DoubleINV_ID_PASS")])
-table(INV.indiv.chrom1[INV.indiv.chrom1$INV1_ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "INV1_ID_PASS")])
-table(INV.indiv.chrom1[INV.indiv.chrom1$INV2_ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "INV2_ID_PASS")])
+##Main Manuscript figure
 
-###Chrom2
-table(INV.indiv.chrom2[INV.indiv.chrom2$Location1_ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "Location1_ID_PASS")]) #gadmor3
-table(INV.indiv.chrom2[INV.indiv.chrom2$Location2_ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "Location2_ID_PASS")]) #gadmor2
 
-###Chrom7
-table(INV.indiv.chrom7[INV.indiv.chrom7$ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "ID_PASS")])
 
-###Chrom12
-table(INV.indiv.chrom12[INV.indiv.chrom12$ID_PASS=="TRUE", c("ECOTYPE", "PCA_PRESENT", "ID_PASS")])
-
-```
-
-## Generate Comparison Tables and figures
+## Supplementary Figure
 
 ###Chrom 1
 
 ```{r}
-INV.indiv.subset.chrom1 <- na.omit(data.frame(ecotype=INV.pca_chrom1$ECOTYPE, indiv=INV.pca_chrom1$INDIVIDUAL, PCA=INV.pca_chrom1$PCA_PRESENT))
+chrom1.plot <- na.omit(data.frame(ecotype=chrom1.PCA$ECOTYPE, indiv=chrom1.PCA$INDIVIDUAL, PCA=chrom1.PCA$PCA_PRESENT))
 
-for (i in 1:nrow(INV.indiv.subset.chrom1)) {
-  indiv.data <- INV.indiv.chrom1[INV.indiv.chrom1$Individual==INV.indiv.subset.chrom1$indiv[i], c("DoubleINV_ID_PASS", "INV1_ID_PASS", "INV2_ID_PASS")]
+
+
+for (i in 1:nrow(chrom1.plot)) {
+  indiv.data <- chrom1.INVind[chrom1.INVind$samp_full==chrom1.plot$indiv[i], c("samp_full", "PCA_PRESENT", "SV_Det", "PCA_Match")]
   
-  if(sum(indiv.data$DoubleINV_ID_PASS)>=1 && sum(indiv.data$INV1_ID_PASS)>=1 | sum(indiv.data$INV2_ID_PASS)>=1){
-    INV.indiv.subset.chrom1$sv[i] <- "ERROR"
-    INV.indiv.subset.chrom1$sv.plot[i] <- "Error"
-  }
-  if(sum(indiv.data$DoubleINV_ID_PASS)>=1) {
-    INV.indiv.subset.chrom1$sv[i] <- "INV-1 Detected"
-    INV.indiv.subset.chrom1$sv.plot[i] <- "INV Detected"
-    }
-  if(sum(indiv.data$INV1_ID_PASS)>=1){
-    INV.indiv.subset.chrom1$sv[i] <- "INV-1a Detected"
-    INV.indiv.subset.chrom1$sv.plot[i] <- "INV Detected"
-  } 
-  if(sum(indiv.data$INV2_ID_PASS)>=1){
-    INV.indiv.subset.chrom1$sv[i] <- "INV-1b Detected"
-    INV.indiv.subset.chrom1$sv.plot[i] <- "INV Detected"
-  } 
-  if(sum(indiv.data$DoubleINV_ID_PASS)==0 && sum(indiv.data$INV1_ID_PASS)==0 && sum(indiv.data$INV2_ID_PASS)==0){
-    INV.indiv.subset.chrom1$sv[i] <- "No INV Detected"
-    INV.indiv.subset.chrom1$sv.plot[i] <- "No INV Detected"
+  if(sum(indiv.data$SV_Det)>=1) {
+    chrom1.plot$sv.plot[i] <- "INV Detected"
+    } else if(sum(indiv.data$SV_Det)==0){
+    chrom1.plot$sv.plot[i] <- "No INV Detected"
   }
 }
 

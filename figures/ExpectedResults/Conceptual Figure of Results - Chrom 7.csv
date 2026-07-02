@@ -1,0 +1,13 @@
+Ecotype,SV,PCA,Freq
+Gulf-of-Maine,INV Detected,FALSE,0
+Iceland-Migratory,INV Detected,FALSE,0
+Iceland-Nonmigratory,INV Detected,FALSE,0
+Gulf-of-Maine,No INV Detected,FALSE,94
+Iceland-Migratory,No INV Detected,FALSE,0
+Iceland-Nonmigratory,No INV Detected,FALSE,18
+Gulf-of-Maine,INV Detected,TRUE,42
+Iceland-Migratory,INV Detected,TRUE,78
+Iceland-Nonmigratory,INV Detected,TRUE,62
+Gulf-of-Maine,No INV Detected,TRUE,0
+Iceland-Migratory,No INV Detected,TRUE,0
+Iceland-Nonmigratory,No INV Detected,TRUE,0
